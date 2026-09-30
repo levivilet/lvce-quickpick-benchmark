@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os'
 import { setTimeout as delay } from 'node:timers/promises'
 import { chromium, type Browser } from 'playwright'
 import { Protocol } from './protocol.ts'
+import { trafficPreload } from './traffic-runtime.ts'
 
 export interface Editor { id: string; name: string; version: string; binary: string }
 export const utilityInstrumentation = `(()=>{
@@ -21,7 +22,7 @@ export const utilityInstrumentation = `(()=>{
   };return true;
 })()`
 
-export async function launch(editor: Editor, profile: boolean, logPath: string, startupTimeout = 30000) {
+export async function launch(editor: Editor, profile: boolean, logPath: string, startupTimeout = 30000, traffic = false) {
   const root = await mkdtemp(`${tmpdir()}/quickpick-benchmark-${editor.id}-`)
   const env = { ...process.env, VSCODE_CLI: '1' }
   for (const name of ['CONFIG', 'DATA', 'CACHE', 'STATE']) {
@@ -31,7 +32,9 @@ export async function launch(editor: Editor, profile: boolean, logPath: string, 
   }
   await mkdir(`${root}/profile/User`, { recursive: true })
   await writeFile(`${root}/profile/User/settings.json`, JSON.stringify({ 'security.workspace.trust.enabled': false, 'workbench.startupEditor': 'none', 'update.mode': 'none', 'telemetry.telemetryLevel': 'off', 'extensions.autoCheckUpdates': false, 'extensions.autoUpdate': false }))
-  const child = spawn(resolve(`.tmp/apps/${editor.id}/${editor.binary}`), ['--no-sandbox', '--disable-gpu', '--remote-debugging-port=0', ...(profile ? ['--inspect-brk=0'] : []), '--user-data-dir', `${root}/profile`, '--disable-extensions', '--skip-welcome', '--skip-release-notes', '--disable-workspace-trust', resolve('.tmp/fixture')], { env, detached: true, stdio: ['ignore', 'pipe', 'pipe'] })
+  const preload = `${root}/traffic-preload.cjs`
+  if (traffic) await writeFile(preload, trafficPreload)
+  const child = spawn(resolve(`.tmp/apps/${editor.id}/${editor.binary}`), ['--no-sandbox', '--disable-gpu', '--remote-debugging-port=0', ...(profile || traffic ? ['--inspect-brk=0'] : []), '--user-data-dir', `${root}/profile`, '--disable-extensions', '--skip-welcome', '--skip-release-notes', '--disable-workspace-trust', resolve('.tmp/fixture')], { env, detached: true, stdio: ['ignore', 'pipe', 'pipe'] })
   let output = ''
   let spawnError: Error | undefined
   child.on('error', error => { spawnError = error })
@@ -68,13 +71,18 @@ export async function launch(editor: Editor, profile: boolean, logPath: string, 
     throw new Error(`Editor startup timeout: ${pattern}`)
   }
   try {
-    if (profile) {
+    if (profile || traffic) {
       main = await Protocol.connect(await wait(/Debugger listening on (ws:\/\/[^\s]+)/))
       await main.send('Debugger.enable')
       const paused = main.event('Debugger.paused')
       await main.send('Runtime.runIfWaitingForDebugger')
       await paused
-      const injected = await main.send('Runtime.evaluate', { expression: utilityInstrumentation, returnByValue: true })
+      const expression = profile ? utilityInstrumentation : `(() => {
+        const { app } = process.getBuiltinModule('module').createRequire(process.cwd()+'/benchmark.cjs')('electron');
+        app.on('session-created', session => session.registerPreloadScript({type:'frame',filePath:${JSON.stringify(preload)}}));
+        return true;
+      })()`
+      const injected = await main.send('Runtime.evaluate', { expression, returnByValue: true })
       if (injected.exceptionDetails || injected.result.value !== true) throw new Error(`Inspector instrumentation failed: ${JSON.stringify(injected)}`)
       await main.send('Debugger.resume')
       await main.send('Debugger.disable')
