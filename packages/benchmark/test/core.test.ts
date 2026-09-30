@@ -17,7 +17,9 @@ import { spawn } from 'node:child_process'
 
 const profile = { startTime: 0, endTime: 6000, nodes: [{ id: 1, callFrame: { functionName: 'filter', url: 'app.js' } }, { id: 2, callFrame: { functionName: '(idle)', url: '' } }, { id: 3, callFrame: { functionName: '(garbage collector)', url: '' } }], samples: [1, 2, 3], timeDeltas: [1000, 2000, 3000] }
 test('profile accounting excludes idle and VM samples and rejects incomplete data', () => {
-  assert.deepEqual(summarize(profile), { javascriptMs: 1, idleMs: 2, vmMs: 3, samples: 3, durationMs: 6 })
+  assert.deepEqual(summarize(profile), { javascriptMs: 1, idleMs: 2, vmMs: 3, samples: 3, discardedSamples: 0, durationMs: 6 })
+  assert.deepEqual(summarize({ ...profile, timeDeltas: [1000, -2, 3000] }), { javascriptMs: 1, idleMs: 0, vmMs: 3, samples: 2, discardedSamples: 1, durationMs: 6 })
+  assert.throws(() => summarize({ ...profile, timeDeltas: [1000, -1001, 3000] }), /Invalid CPU sample/)
   assert.throws(() => summarize({ ...profile, timeDeltas: [] }))
   assert.throws(() => summarize({ ...profile, samples: [99, 2, 3] }))
   assert.throws(() => summarize({ ...profile, samples: [], timeDeltas: [] }))

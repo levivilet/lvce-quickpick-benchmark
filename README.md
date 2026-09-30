@@ -87,7 +87,10 @@ Each sample's microsecond delta is attributed to its sampled frame. `(idle)` is
 separate from `(program)`, garbage collection and other VM pseudo frames. Remaining
 samples are reported as estimated JavaScript milliseconds. Missing profiles or
 changed target/process membership invalidate the trial, never produce a synthetic
-zero. A valid profile with only idle samples can legitimately report zero JS time.
+zero. Chromium samples with a negative delta of at most 1 ms are excluded from the
+totals and counted as `discardedSamples` in raw results; larger clock anomalies
+invalidate the trial. A valid profile with only idle samples can legitimately
+report zero JS time.
 The raw profiles retain each profiler's exact window; sequential starts/stops and
 controller gaps add overhead. Instrumentation is not overhead-corrected. Profiling
 numbers must not be substituted for the separate latency pass.
