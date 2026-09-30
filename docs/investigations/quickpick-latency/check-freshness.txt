@@ -4,10 +4,11 @@ import { search } from '../../packages/benchmark/src/adapters.ts'
 const editor=JSON.parse(await readFile('config/editors.lock.json','utf8'))[0]
 const variant=process.argv[2]
 const file='QuickpickFreshnessProbe.ts'
+let created=false
 const app=await launch(editor,false,`results/freshness-${variant}.log`)
 try {
  await search(app.page,'lvce','quickOpenModel.ts'); await app.page.keyboard.press('Escape')
- await writeFile(`.tmp/fixture/${file}`,'// temporary freshness probe\n',{flag:'wx'})
+ await writeFile(`.tmp/fixture/${file}`,'// temporary freshness probe\n',{flag:'wx'}); created=true
  await app.page.keyboard.press('Control+p')
  await app.page.locator('input[name="QuickPickInput"]').waitFor()
  await app.page.keyboard.insertText(file)
@@ -15,4 +16,4 @@ try {
  try {await app.page.locator('.QuickPickItemLabel').filter({hasText:file}).waitFor({timeout:5000});visible=true}catch{}
  await writeFile(`results/freshness-${variant}.json`,JSON.stringify({variant,file,visible,timeoutMs:5000},null,2))
  console.log({variant,visible})
-} finally {await app.close();await unlink(`.tmp/fixture/${file}`).catch(()=>{})}
+} finally {await app.close();if(created) await unlink(`.tmp/fixture/${file}`)}
