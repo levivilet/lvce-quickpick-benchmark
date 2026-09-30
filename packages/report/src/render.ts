@@ -9,6 +9,7 @@ export function render(report: any): string {
     { title: 'Open quickpick', unit: 'ms · median per trial', mode: 'latency', get: (t: any) => t.samples[0].milliseconds },
     { title: 'Filter each character', unit: 'ms · median per keystroke', mode: 'latency', get: (t: any) => t.samples.slice(1).map((s: any) => s.milliseconds) },
     { title: 'Complete filename search', unit: 'ms · sum of measured opening and filtering intervals', mode: 'latency', get: (t: any) => t.samples.reduce((sum: number, s: any) => sum + s.milliseconds, 0) },
+    { title: 'Renderer JavaScript', unit: 'sampled ms · application page isolate per search', mode: 'profile', get: (t: any) => typeof t.profile?.rendererJavaScriptMs === 'number' ? t.profile.rendererJavaScriptMs : [] },
     { title: 'Frontend JavaScript', unit: 'sampled ms · renderer and web workers per search', mode: 'profile', get: (t: any) => t.profile.frontendMs },
     { title: 'Backend JavaScript', unit: 'sampled ms · Electron main and utility processes per search', mode: 'profile', get: (t: any) => t.profile.backendMs },
   ]
