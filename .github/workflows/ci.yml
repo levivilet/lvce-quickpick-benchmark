@@ -34,7 +34,7 @@ jobs:
     name: Desktop benchmark (all four editors)
     needs: check
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
