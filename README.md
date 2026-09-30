@@ -6,7 +6,7 @@ https://levivilet.github.io/lvce-quickpick-benchmark/.
 
 ## Run
 
-Linux x64, Node 24.15+, Git, `tar`, `dpkg-deb`, and Electron system libraries are required.
+Linux x64, Node 24.15+, Git, `tar`, `dpkg-deb`, `ripgrep` (`rg`), and Electron system libraries are required.
 The editor binaries are pinned with SHA256 checksums in `config/editors.lock.json`.
 The benchmark workspace is the **VS Code source tree at tag 1.39.0**, commit
 `9df03c6d6ce97c6645c5846f6dfa2a6a7d276515`; this is distinct from the VS Code executable version.

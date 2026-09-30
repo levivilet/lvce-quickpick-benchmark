@@ -3,6 +3,8 @@ import { execFileSync } from 'node:child_process'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 
+try { execFileSync('rg', ['--version'], { stdio: 'pipe' }) } catch { throw new Error('Install ripgrep (rg) before running the desktop benchmark; LVCE uses it for file search') }
+
 await mkdir('.tmp/apps', { recursive: true })
 const editors = JSON.parse(await readFile('config/editors.lock.json', 'utf8'))
 for (const editor of editors) {
