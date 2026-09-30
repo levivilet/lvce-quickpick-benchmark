@@ -5,6 +5,7 @@ import { arm, collect, adapters } from '../src/adapters.ts'
 import { summarize } from '../src/profiles.ts'
 import { render, statistics } from '../../report/src/render.ts'
 import { launch } from '../src/launch.ts'
+import { summarizeRenderingTrace } from '../src/rendering.ts'
 import { readdir, mkdir, writeFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 
@@ -24,6 +25,36 @@ test('statistics and report preserve unavailable data and escape external labels
   assert(!html.includes('<script>x</script>'))
   assert(html.includes('&lt;script&gt;'))
   assert(html.includes('raw/results.json'))
+})
+test('rendering metrics use only complete main-frame events and convert trace microseconds', () => {
+  const trace = { traceEvents: [
+    { name: 'UpdateLayoutTree', ph: 'X', ts: 10, dur: 1250, args: { data: { frame: 'main' } } },
+    { name: 'UpdateLayoutTree', ph: 'X', ts: 20, dur: 750, args: { beginData: { frame: 'main' } } },
+    { name: 'Paint', ph: 'X', ts: 30, dur: 500, args: { data: { frame: 'main' } } },
+    { name: 'Paint', ph: 'X', ts: 40, dur: 9000, args: { data: { frame: 'other' } } },
+    { name: 'Paint', ph: 'B', ts: 50, dur: 1000, args: { data: { frame: 'main' } } },
+  ] }
+  assert.deepEqual(summarizeRenderingTrace(trace, 'main'), { styleRecalculationCount: 2, styleRecalculationMs: 2, paintEventCount: 1, paintMs: 0.5 })
+  assert.deepEqual(summarizeRenderingTrace({ traceEvents: [
+    { name: 'UpdateLayoutTree', ph: 'X', ts: 1, dur: 0, args: { data: { frame: 'main' } } },
+    { name: 'Paint', ph: 'X', ts: 2, dur: 0, args: { data: { frame: 'main' } } },
+  ] }, 'main'), { styleRecalculationCount: 1, styleRecalculationMs: 0, paintEventCount: 1, paintMs: 0 })
+  assert.throws(() => summarizeRenderingTrace({ traceEvents: [] }, 'main'), /No main-frame style recalculation/)
+  assert.throws(() => summarizeRenderingTrace({ traceEvents: [
+    { name: 'RecalculateStyles', ph: 'X', ts: 1, dur: 1, args: { beginData: { frame: 'main' } } },
+    { name: 'Paint', ph: 'X', ts: 2, dur: 1, args: { data: { frame: 'main' } } },
+  ] }, 'main'), /No main-frame style recalculation/)
+  assert.throws(() => summarizeRenderingTrace({ traceEvents: [{ name: 'UpdateLayoutTree', ph: 'X', ts: 1, dur: 1, args: { data: { frame: 'other' } } }] }, 'main'), /No main-frame style recalculation/)
+})
+test('render report shows rendering units, unavailable states, and raw trace links', () => {
+  const html = render({ created: 'today', editors: [{ id: 'lvce', name: 'LVCE', version: '1' }, { id: 'vscode', name: 'VS Code', version: '2' }], trials: [
+    { editor: 'lvce', mode: 'render', status: 'passed', rendering: { styleRecalculationMs: 2, styleRecalculationCount: 3, paintMs: 1, paintEventCount: 4, trace: 'lvce.trace.json' } },
+  ], repeats: 1, fixture: { commit: 'abc' } })
+  assert(html.includes('CSS style recalculation'))
+  assert(html.includes('Paint work'))
+  assert(html.includes('main-frame ms'))
+  assert(html.includes('raw/lvce.trace.json'))
+  assert(html.includes('Unavailable'))
 })
 test('current highlights distinguish unchanged filenames from stale results; timeout and page crash reject', async () => {
   const browser = await chromium.launch({ executablePath: process.env.CHROME_BIN })

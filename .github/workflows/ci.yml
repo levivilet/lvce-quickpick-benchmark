@@ -53,7 +53,7 @@ jobs:
           path: .tmp/apps
           key: editors-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('config/editors.lock.json') }}
       - run: npm run setup
-      - name: Benchmark both editors, latency and profile passes
+      - name: Benchmark both editors, latency, profile and rendering passes
         run: xvfb-run -a npm run benchmark -- --repeats ${{ github.event_name == 'pull_request' && '1' || '5' }}
       - run: npm run report
       - uses: actions/upload-artifact@v4
