@@ -18,7 +18,11 @@ export async function arm(page: Page, selectors: Selectors, query: string, timeo
       const timer = setTimeout(() => { clean(); reject(new Error(`Quickpick update timeout: ${query}`)) }, timeoutMs)
       const keydown = (event: KeyboardEvent) => {
         if (!event.isTrusted || event.key === 'Control') return
-        started ??= performance.now()
+        if (started === undefined) {
+          started = performance.now()
+          const traffic = (window as any).__quickpickTraffic
+          if (traffic) { traffic.begin(); document.dispatchEvent(new Event('__quickpickTrafficBegin')) }
+        }
       }
       document.addEventListener('keydown', keydown, true)
       const tick = () => {
@@ -31,6 +35,8 @@ export async function arm(page: Page, selectors: Selectors, query: string, timeo
         const ready = started !== undefined && input && visible(input) && document.activeElement === input && input.value === query && !busy && (query === '' || matched)
         consecutive = ready ? consecutive + 1 : 0
         if (consecutive >= 2) {
+          const traffic = (window as any).__quickpickTraffic
+          if (traffic) { traffic.end(); document.dispatchEvent(new Event('__quickpickTrafficEnd')) }
           clean()
           resolve({ query, milliseconds: performance.now() - started!, rows: rows.map(row => ({ label: row.querySelector(selectors.label)?.textContent, text: row.textContent, highlights: [...row.querySelectorAll(selectors.highlight)].map(x => x.textContent).join('') })) })
           return
