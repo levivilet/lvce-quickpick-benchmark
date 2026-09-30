@@ -167,3 +167,9 @@ Tracing and event filtering add overhead. The launcher uses `--disable-gpu`, so 
 results describe main-frame browser work in that environment and exclude GPU
 rasterization, compositing and physical display latency. They are event-duration totals,
 not end-to-end search latency or unique painted pixels.
+
+## Performance investigation
+
+See the [quickpick latency investigation](docs/investigations/quickpick-latency/README.md)
+for repeated measurements, native search timings, and a cache experiment rejected
+because it loses file freshness.

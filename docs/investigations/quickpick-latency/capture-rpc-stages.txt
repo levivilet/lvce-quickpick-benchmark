@@ -1,0 +1,29 @@
+import { readFile, writeFile } from 'node:fs/promises'
+import { launch } from '../../packages/benchmark/src/launch.ts'
+import { search } from '../../packages/benchmark/src/adapters.ts'
+import { settleTargets } from '../../packages/benchmark/src/readiness.ts'
+const editor=JSON.parse(await readFile('config/editors.lock.json','utf8'))[0]
+const app=await launch(editor,false,'results/stages.log')
+try {
+ await search(app.page,'lvce','quickOpenModel.ts'); await app.page.keyboard.press('Escape'); await settleTargets(app.browser,'lvce')
+ const workers=app.page.workers()
+ const install=()=>{
+  const g=globalThis as any; g.__stages=[]
+  const ids=new WeakMap<object,number>(); let next=0; const seen=new WeakSet<object>()
+  const record=(direction:string,port:object,data:any)=>{
+   if(!ids.has(port)) ids.set(port,++next)
+   g.__stages.push({time:performance.timeOrigin+performance.now(),direction,port:ids.get(port),id:data?.id,method:data?.method,params:Array.isArray(data?.params)?data.params.slice(0,3).map((x:any)=>typeof x==='string'?x.slice(0,180):typeof x):undefined,length:Array.isArray(data?.result)?data.result.length:undefined})
+  }
+  const original=MessagePort.prototype.postMessage
+  MessagePort.prototype.postMessage=function(data:any,...rest:any[]){record('send',this,data);return Reflect.apply(original,this,[data,...rest])}
+  const desc=Object.getOwnPropertyDescriptor(MessageEvent.prototype,'data')!
+  Object.defineProperty(MessageEvent.prototype,'data',{...desc,get(){const value=desc.get!.call(this);if(!seen.has(this)&&this.currentTarget instanceof MessagePort){seen.add(this);record('receive',this.currentTarget,value)}return value}})
+ }
+ await app.page.evaluate(install)
+ for(const worker of workers) await worker.evaluate(install)
+ const samples=await search(app.page,'lvce','quickOpenModel.ts')
+ const records=[]
+ records.push({url:app.page.url(),entries:await app.page.evaluate(()=>(globalThis as any).__stages)})
+ for(const worker of workers) records.push({url:worker.url(),entries:await worker.evaluate(()=>(globalThis as any).__stages)})
+ await writeFile('results/stages.json',JSON.stringify({samples,records},null,2))
+} finally {await app.close()}

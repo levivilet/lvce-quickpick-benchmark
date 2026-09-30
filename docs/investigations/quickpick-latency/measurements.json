@@ -1,0 +1,2516 @@
+{
+  "published": {
+    "created": "2026-09-30T08:43:44.020Z",
+    "sourceSha256": "529e902cc57e3038030c9fa1ef473578080e23757ab9ce0a8e91402e7058243d",
+    "trials": [
+      {
+        "editor": "lvce",
+        "repeat": 0,
+        "filename": "quickOpenModel.ts",
+        "status": "passed",
+        "milliseconds": [
+          67.8,
+          80.2,
+          63.35,
+          62.78,
+          64.375,
+          63.085,
+          62.885,
+          63.475,
+          63.775,
+          63.195,
+          63.48,
+          63.61,
+          63.85,
+          64.435,
+          63.565,
+          63.495,
+          64.835,
+          63.875
+        ]
+      },
+      {
+        "editor": "lvce",
+        "repeat": 0,
+        "filename": "editorOptions.ts",
+        "status": "passed",
+        "milliseconds": [
+          68.625,
+          79.8,
+          79.53,
+          63.35,
+          63.05,
+          62.84,
+          63.625,
+          79.595,
+          80.755,
+          62.485,
+          63.045,
+          63.94,
+          63.435,
+          63.84,
+          63.985,
+          63.855,
+          63.715
+        ]
+      },
+      {
+        "editor": "vscode",
+        "repeat": 0,
+        "filename": "quickOpenModel.ts",
+        "status": "passed",
+        "milliseconds": [
+          19.4,
+          44.2,
+          46.4,
+          47,
+          46.5,
+          46.7,
+          45.1,
+          49.8,
+          43.9,
+          46.5,
+          47.3,
+          46.7,
+          47.2,
+          46.7,
+          48.1,
+          46.6,
+          47,
+          48.1
+        ]
+      },
+      {
+        "editor": "vscode",
+        "repeat": 0,
+        "filename": "editorOptions.ts",
+        "status": "passed",
+        "milliseconds": [
+          29.8,
+          110.7,
+          81.3,
+          80.8,
+          77,
+          80,
+          64.8,
+          61.3,
+          48.1,
+          45.5,
+          47.1,
+          47,
+          46,
+          44.7,
+          46.3,
+          47.2,
+          46.3
+        ]
+      },
+      {
+        "editor": "vscode",
+        "repeat": 1,
+        "filename": "quickOpenModel.ts",
+        "status": "passed",
+        "milliseconds": [
+          23.2,
+          45.4,
+          46.7,
+          46.5,
+          46.5,
+          46.6,
+          46.6,
+          46.9,
+          46.6,
+          46.8,
+          46,
+          46.8,
+          47.3,
+          46.9,
+          48,
+          45.3,
+          47.3,
+          46.7
+        ]
+      },
+      {
+        "editor": "vscode",
+        "repeat": 1,
+        "filename": "editorOptions.ts",
+        "status": "passed",
+        "milliseconds": [
+          32.5,
+          100.4,
+          74.3,
+          78.8,
+          80.1,
+          81,
+          63.3,
+          63.7,
+          41.7,
+          46.7,
+          46.4,
+          45.7,
+          44.7,
+          47.1,
+          46.9,
+          46.1,
+          46.5
+        ]
+      },
+      {
+        "editor": "lvce",
+        "repeat": 1,
+        "filename": "quickOpenModel.ts",
+        "status": "passed",
+        "milliseconds": [
+          69.32,
+          79.72,
+          63.38,
+          64.03,
+          63.625,
+          62.74,
+          63.64,
+          63.315,
+          63.595,
+          63.57,
+          64.125,
+          63.875,
+          64.32,
+          63.82,
+          64.36,
+          63.935,
+          63.8,
+          64.37
+        ]
+      },
+      {
+        "editor": "lvce",
+        "repeat": 1,
+        "filename": "editorOptions.ts",
+        "status": "passed",
+        "milliseconds": [
+          69.45,
+          80.235,
+          79.285,
+          64.325,
+          78.98,
+          64.01,
+          63.3,
+          79.655,
+          80.745,
+          62.66,
+          64.265,
+          63.215,
+          64.35,
+          63.435,
+          64.315,
+          63.765,
+          64.29
+        ]
+      },
+      {
+        "editor": "lvce",
+        "repeat": 2,
+        "filename": "quickOpenModel.ts",
+        "status": "passed",
+        "milliseconds": [
+          67.84,
+          80.13,
+          64.295,
+          62.555,
+          64.05,
+          63.825,
+          63.715,
+          63.305,
+          63.485,
+          63.005,
+          63.635,
+          63.77,
+          64.27,
+          64.485,
+          63.905,
+          64,
+          64.385,
+          64.16
+        ]
+      },
+      {
+        "editor": "lvce",
+        "repeat": 2,
+        "filename": "editorOptions.ts",
+        "status": "passed",
+        "milliseconds": [
+          69.63,
+          80.54,
+          80.045,
+          63.31,
+          63.285,
+          63.91,
+          79.595,
+          80.975,
+          76.585,
+          63.99,
+          63.245,
+          63.915,
+          64.075,
+          64.385,
+          63.865,
+          64.015,
+          63.19
+        ]
+      },
+      {
+        "editor": "vscode",
+        "repeat": 2,
+        "filename": "quickOpenModel.ts",
+        "status": "passed",
+        "milliseconds": [
+          19,
+          42.2,
+          45.7,
+          47,
+          46.8,
+          46.1,
+          46.8,
+          47.2,
+          47,
+          46.2,
+          47.1,
+          46.9,
+          46.5,
+          47.5,
+          47.4,
+          48.1,
+          45.4,
+          37.1
+        ]
+      },
+      {
+        "editor": "vscode",
+        "repeat": 2,
+        "filename": "editorOptions.ts",
+        "status": "passed",
+        "milliseconds": [
+          32.1,
+          111.4,
+          80.2,
+          79.9,
+          74.8,
+          63.3,
+          65.2,
+          61.4,
+          46.9,
+          46.8,
+          46.2,
+          47.3,
+          46.3,
+          47.1,
+          46.2,
+          47.3,
+          46
+        ]
+      },
+      {
+        "editor": "vscode",
+        "repeat": 3,
+        "filename": "quickOpenModel.ts",
+        "status": "passed",
+        "milliseconds": [
+          32.3,
+          40.7,
+          46.3,
+          47,
+          46.4,
+          46.6,
+          46.6,
+          43.7,
+          41.7,
+          46.1,
+          47.6,
+          46.8,
+          46.8,
+          47.5,
+          47.5,
+          47.4,
+          47.4,
+          46.8
+        ]
+      },
+      {
+        "editor": "vscode",
+        "repeat": 3,
+        "filename": "editorOptions.ts",
+        "status": "passed",
+        "milliseconds": [
+          31.4,
+          113.2,
+          78.8,
+          80,
+          80.2,
+          63.7,
+          64.1,
+          62.7,
+          47.1,
+          46.3,
+          46.6,
+          46.5,
+          47.2,
+          46.7,
+          46.9,
+          47.1,
+          45.9
+        ]
+      },
+      {
+        "editor": "lvce",
+        "repeat": 3,
+        "filename": "quickOpenModel.ts",
+        "status": "passed",
+        "milliseconds": [
+          70.48,
+          80.575,
+          63.755,
+          63.37,
+          63.61,
+          64.39,
+          62.725,
+          64.43,
+          62.795,
+          64.315,
+          63.16,
+          64.61,
+          63.865,
+          64.205,
+          64.675,
+          63.63,
+          64.51,
+          63.695
+        ]
+      },
+      {
+        "editor": "lvce",
+        "repeat": 3,
+        "filename": "editorOptions.ts",
+        "status": "passed",
+        "milliseconds": [
+          71.215,
+          79.975,
+          80.03,
+          63.695,
+          63.955,
+          63.645,
+          63.495,
+          63.835,
+          80.255,
+          64.075,
+          63.455,
+          63.93,
+          64.435,
+          63.195,
+          64.9,
+          63.98,
+          63.56
+        ]
+      },
+      {
+        "editor": "lvce",
+        "repeat": 4,
+        "filename": "quickOpenModel.ts",
+        "status": "passed",
+        "milliseconds": [
+          69.255,
+          80.365,
+          63.2,
+          63.495,
+          62.385,
+          63.965,
+          63.365,
+          63.47,
+          65.255,
+          62.095,
+          63.52,
+          64.17,
+          64.44,
+          64.155,
+          63.75,
+          63.475,
+          64.085,
+          64.31
+        ]
+      },
+      {
+        "editor": "lvce",
+        "repeat": 4,
+        "filename": "editorOptions.ts",
+        "status": "passed",
+        "milliseconds": [
+          70.065,
+          79.62,
+          80.885,
+          62.715,
+          64.18,
+          62.83,
+          64.26,
+          80.265,
+          79.845,
+          63.025,
+          63.475,
+          64.045,
+          63.54,
+          64.175,
+          63.78,
+          64.255,
+          63.44
+        ]
+      },
+      {
+        "editor": "vscode",
+        "repeat": 4,
+        "filename": "quickOpenModel.ts",
+        "status": "passed",
+        "milliseconds": [
+          25.7,
+          40.6,
+          47.6,
+          46.3,
+          46.5,
+          46.5,
+          47.6,
+          45.7,
+          47.5,
+          46.2,
+          46.1,
+          47.7,
+          47,
+          47.3,
+          47.6,
+          46.1,
+          47.2,
+          47.6
+        ]
+      },
+      {
+        "editor": "vscode",
+        "repeat": 4,
+        "filename": "editorOptions.ts",
+        "status": "passed",
+        "milliseconds": [
+          31.4,
+          95,
+          79.1,
+          79,
+          80.4,
+          79.8,
+          63.7,
+          63.6,
+          46.7,
+          47,
+          46.3,
+          46.4,
+          46.7,
+          46.2,
+          47.3,
+          46.9,
+          46.1
+        ]
+      }
+    ]
+  },
+  "localBaseline": {
+    "created": "2026-09-30T09:03:41.416Z",
+    "sourceSha256": "df9f1ca82fb038c6f2a67184ebb2cc8549bb10a5102be0f9a84af201243fceca",
+    "trials": [
+      {
+        "editor": "lvce",
+        "repeat": 0,
+        "filename": "quickOpenModel.ts",
+        "status": "passed",
+        "milliseconds": [
+          132.885,
+          108.58,
+          111.86,
+          128.835,
+          125.07,
+          126.255,
+          94.52,
+          94.01,
+          93.575,
+          110.73,
+          109.27,
+          127.705,
+          127.55,
+          127.005,
+          126.83,
+          109.9,
+          126.27,
+          110.76
+        ]
+      },
+      {
+        "editor": "lvce",
+        "repeat": 0,
+        "filename": "editorOptions.ts",
+        "status": "passed",
+        "milliseconds": [
+          150.32,
+          125.425,
+          142.41,
+          109.28,
+          109.655,
+          94.765,
+          127.115,
+          128.35,
+          127.335,
+          108.38,
+          126.24,
+          108.345,
+          94.275,
+          94.105,
+          94.765,
+          94.015,
+          112.24
+        ]
+      },
+      {
+        "editor": "vscode",
+        "repeat": 0,
+        "filename": "quickOpenModel.ts",
+        "status": "passed",
+        "milliseconds": [
+          31.1,
+          42.3,
+          43.6,
+          42.4,
+          42.6,
+          42.4,
+          45.2,
+          43.3,
+          46.3,
+          36.7,
+          42.2,
+          44.4,
+          42,
+          44.2,
+          43.2,
+          48.5,
+          53.5,
+          43.5
+        ]
+      },
+      {
+        "editor": "vscode",
+        "repeat": 0,
+        "filename": "editorOptions.ts",
+        "status": "passed",
+        "milliseconds": [
+          35,
+          166.8,
+          124.5,
+          103.8,
+          112.9,
+          103.2,
+          136.7,
+          105.5,
+          72.5,
+          65.5,
+          61.1,
+          54.4,
+          53.5,
+          43.8,
+          52.5,
+          48.1,
+          42.4
+        ]
+      },
+      {
+        "editor": "vscode",
+        "repeat": 1,
+        "filename": "quickOpenModel.ts",
+        "status": "passed",
+        "milliseconds": [
+          25.1,
+          62.9,
+          46.2,
+          41.5,
+          40.4,
+          43.2,
+          45.6,
+          45.4,
+          44.1,
+          44.1,
+          43.4,
+          44.9,
+          43.8,
+          55.1,
+          44.9,
+          44.3,
+          44.5,
+          45.7
+        ]
+      },
+      {
+        "editor": "vscode",
+        "repeat": 1,
+        "filename": "editorOptions.ts",
+        "status": "passed",
+        "milliseconds": [
+          20.7,
+          188.4,
+          130.2,
+          123.8,
+          120.6,
+          98.8,
+          114.3,
+          128.5,
+          64.7,
+          65.1,
+          37.4,
+          43.8,
+          39.2,
+          44.6,
+          39.5,
+          54.7,
+          50.8
+        ]
+      },
+      {
+        "editor": "lvce",
+        "repeat": 1,
+        "filename": "quickOpenModel.ts",
+        "status": "passed",
+        "milliseconds": [
+          134.455,
+          143.79,
+          111.325,
+          109.97,
+          108.945,
+          126.645,
+          124.525,
+          94.22,
+          112.075,
+          110.12,
+          93.48,
+          111.5,
+          126.595,
+          143.915,
+          80.17,
+          78.485,
+          111.27,
+          111.205
+        ]
+      },
+      {
+        "editor": "lvce",
+        "repeat": 1,
+        "filename": "editorOptions.ts",
+        "status": "passed",
+        "milliseconds": [
+          124.55,
+          112.205,
+          111.415,
+          112.105,
+          111.25,
+          126.015,
+          94.445,
+          110.345,
+          108.905,
+          93.4,
+          93.44,
+          110.54,
+          95.36,
+          106.63,
+          95.06,
+          94.415,
+          94.095
+        ]
+      },
+      {
+        "editor": "lvce",
+        "repeat": 2,
+        "filename": "quickOpenModel.ts",
+        "status": "passed",
+        "milliseconds": [
+          106.79,
+          142.575,
+          110.06,
+          110.155,
+          110.085,
+          109.995,
+          93.43,
+          95.075,
+          108.19,
+          110.485,
+          127.425,
+          109.255,
+          92.145,
+          126.82,
+          128.33,
+          94.705,
+          126.8,
+          90.615
+        ]
+      },
+      {
+        "editor": "lvce",
+        "repeat": 2,
+        "filename": "editorOptions.ts",
+        "status": "passed",
+        "milliseconds": [
+          120.08,
+          144.155,
+          109.13,
+          92.26,
+          96.74,
+          109.07,
+          127.7,
+          111.075,
+          128.28,
+          110.71,
+          93.095,
+          95.305,
+          109.695,
+          129.53,
+          108.775,
+          111.18,
+          94.765
+        ]
+      },
+      {
+        "editor": "vscode",
+        "repeat": 2,
+        "filename": "quickOpenModel.ts",
+        "status": "passed",
+        "milliseconds": [
+          25,
+          56.7,
+          42.8,
+          44.5,
+          42.4,
+          44.6,
+          56.7,
+          46.2,
+          44.1,
+          40.6,
+          47.2,
+          38.7,
+          45,
+          43.6,
+          43.6,
+          45.9,
+          42.9,
+          43.6
+        ]
+      },
+      {
+        "editor": "vscode",
+        "repeat": 2,
+        "filename": "editorOptions.ts",
+        "status": "passed",
+        "milliseconds": [
+          36.2,
+          165.1,
+          104.7,
+          128.4,
+          125.6,
+          107.4,
+          106.1,
+          122.5,
+          57.4,
+          78.8,
+          53.3,
+          66.3,
+          54.6,
+          51.7,
+          50.2,
+          48.3,
+          42.5
+        ]
+      },
+      {
+        "editor": "vscode",
+        "repeat": 3,
+        "filename": "quickOpenModel.ts",
+        "status": "passed",
+        "milliseconds": [
+          26.3,
+          70,
+          42.4,
+          41.9,
+          52.5,
+          50.7,
+          53.4,
+          48.3,
+          54.9,
+          39,
+          44.5,
+          42,
+          46.4,
+          40.4,
+          38.4,
+          44.2,
+          43.5,
+          41.8
+        ]
+      },
+      {
+        "editor": "vscode",
+        "repeat": 3,
+        "filename": "editorOptions.ts",
+        "status": "passed",
+        "milliseconds": [
+          36.4,
+          170.1,
+          137.1,
+          165.9,
+          125.2,
+          107,
+          95.4,
+          82.8,
+          47.7,
+          52.6,
+          49.8,
+          39.7,
+          41.1,
+          43.8,
+          44.3,
+          45.2,
+          46.4
+        ]
+      },
+      {
+        "editor": "lvce",
+        "repeat": 3,
+        "filename": "quickOpenModel.ts",
+        "status": "passed",
+        "milliseconds": [
+          120.085,
+          125.86,
+          93.86,
+          110.15,
+          92.895,
+          109.445,
+          110.235,
+          95.68,
+          126.9,
+          126.325,
+          110.005,
+          109.945,
+          129.285,
+          125.01,
+          127.89,
+          127.775,
+          126.68,
+          128.97
+        ]
+      },
+      {
+        "editor": "lvce",
+        "repeat": 3,
+        "filename": "editorOptions.ts",
+        "status": "passed",
+        "milliseconds": [
+          119.95,
+          144.07,
+          109.09,
+          127.82,
+          125.79,
+          142.08,
+          108.7,
+          125.6,
+          126.535,
+          111.31,
+          94.96,
+          127.355,
+          127.965,
+          95.38,
+          110.27,
+          95.68,
+          110.465
+        ]
+      },
+      {
+        "editor": "lvce",
+        "repeat": 4,
+        "filename": "quickOpenModel.ts",
+        "status": "passed",
+        "milliseconds": [
+          125.835,
+          110.865,
+          110.055,
+          110.53,
+          96.07,
+          142.97,
+          110.845,
+          111.51,
+          94.755,
+          95.725,
+          110.925,
+          111.85,
+          112.67,
+          95.395,
+          95.025,
+          111.68,
+          92.75,
+          96.505
+        ]
+      },
+      {
+        "editor": "lvce",
+        "repeat": 4,
+        "filename": "editorOptions.ts",
+        "status": "passed",
+        "milliseconds": [
+          139.62,
+          143.58,
+          109.73,
+          95.18,
+          93.33,
+          128.2,
+          109.205,
+          109.965,
+          159.995,
+          125.5,
+          127.565,
+          93.995,
+          111.84,
+          110.975,
+          127.215,
+          95.435,
+          94.2
+        ]
+      },
+      {
+        "editor": "vscode",
+        "repeat": 4,
+        "filename": "quickOpenModel.ts",
+        "status": "passed",
+        "milliseconds": [
+          22.5,
+          45.1,
+          44.1,
+          47.8,
+          38.8,
+          42.5,
+          42.5,
+          47.6,
+          38.6,
+          44.6,
+          39.7,
+          42.6,
+          44.1,
+          42.3,
+          47.9,
+          44.3,
+          43.9,
+          44.9
+        ]
+      },
+      {
+        "editor": "vscode",
+        "repeat": 4,
+        "filename": "editorOptions.ts",
+        "status": "passed",
+        "milliseconds": [
+          25.4,
+          167.5,
+          119.2,
+          111.2,
+          123.9,
+          91.5,
+          106.8,
+          79.1,
+          49.1,
+          61.7,
+          50.2,
+          43.1,
+          45.3,
+          46.9,
+          48.5,
+          59.9,
+          48.6
+        ]
+      }
+    ]
+  },
+  "snapshotExperiment": {
+    "created": "2026-09-30T09:08:01.761Z",
+    "sourceSha256": "db64775d5e41947230afc0dffc68d7e6aed253e69eb108750896f44f3b7edf34",
+    "trials": [
+      {
+        "editor": "lvce",
+        "repeat": 0,
+        "filename": "quickOpenModel.ts",
+        "status": "passed",
+        "milliseconds": [
+          49.5,
+          58.495,
+          42.87,
+          41.38,
+          42.535,
+          42.9,
+          41.805,
+          42.45,
+          40.36,
+          42.74,
+          44.78,
+          46.055,
+          45.045,
+          45.085,
+          39.835,
+          45.43,
+          45.18,
+          45.805
+        ]
+      },
+      {
+        "editor": "lvce",
+        "repeat": 0,
+        "filename": "editorOptions.ts",
+        "status": "passed",
+        "milliseconds": [
+          54.6,
+          59.855,
+          45.05,
+          45.405,
+          45.375,
+          40.715,
+          43.42,
+          41.265,
+          42.355,
+          44.465,
+          45.365,
+          43.765,
+          43.85,
+          45.065,
+          44.065,
+          44.285,
+          45.735
+        ]
+      },
+      {
+        "editor": "lvce",
+        "repeat": 1,
+        "filename": "quickOpenModel.ts",
+        "status": "passed",
+        "milliseconds": [
+          49.235,
+          62.19,
+          40.615,
+          44.1,
+          44.2,
+          45.39,
+          45.005,
+          42.38,
+          43.795,
+          43.795,
+          43.44,
+          44.565,
+          41.12,
+          46.63,
+          47.335,
+          41.37,
+          41.74,
+          43.21
+        ]
+      },
+      {
+        "editor": "lvce",
+        "repeat": 1,
+        "filename": "editorOptions.ts",
+        "status": "passed",
+        "milliseconds": [
+          52.995,
+          42.995,
+          41.86,
+          43.115,
+          44.185,
+          43.395,
+          43.335,
+          50.235,
+          40.445,
+          43.22,
+          42.865,
+          46.24,
+          39.035,
+          44.055,
+          44.035,
+          42.36,
+          43.565
+        ]
+      },
+      {
+        "editor": "lvce",
+        "repeat": 2,
+        "filename": "quickOpenModel.ts",
+        "status": "passed",
+        "milliseconds": [
+          59.715,
+          41.505,
+          45.955,
+          42.52,
+          43.85,
+          37.905,
+          43.39,
+          46.575,
+          42.005,
+          42.24,
+          44.34,
+          44.21,
+          43.955,
+          42.725,
+          43.77,
+          41.455,
+          44.58,
+          43.615
+        ]
+      },
+      {
+        "editor": "lvce",
+        "repeat": 2,
+        "filename": "editorOptions.ts",
+        "status": "passed",
+        "milliseconds": [
+          38.01,
+          59.675,
+          59.67,
+          42.44,
+          44.75,
+          43.685,
+          44.6,
+          44.48,
+          60.715,
+          43.145,
+          43.74,
+          44.65,
+          44.195,
+          46.14,
+          44.685,
+          43.695,
+          44.31
+        ]
+      },
+      {
+        "editor": "lvce",
+        "repeat": 3,
+        "filename": "quickOpenModel.ts",
+        "status": "passed",
+        "milliseconds": [
+          61.715,
+          58.245,
+          42.46,
+          41.58,
+          42.165,
+          40.855,
+          41.285,
+          44.545,
+          43.9,
+          44.215,
+          42.01,
+          44.865,
+          45.72,
+          44.555,
+          43.89,
+          44.59,
+          43.175,
+          43.26
+        ]
+      },
+      {
+        "editor": "lvce",
+        "repeat": 3,
+        "filename": "editorOptions.ts",
+        "status": "passed",
+        "milliseconds": [
+          43.325,
+          43.94,
+          42.54,
+          44.185,
+          39.455,
+          42.45,
+          43.595,
+          43.89,
+          42.72,
+          44.075,
+          43.33,
+          44.145,
+          42.215,
+          45.395,
+          45.02,
+          46.295,
+          43.67
+        ]
+      },
+      {
+        "editor": "lvce",
+        "repeat": 4,
+        "filename": "quickOpenModel.ts",
+        "status": "passed",
+        "milliseconds": [
+          53.015,
+          58.765,
+          41.08,
+          42.18,
+          43.52,
+          40.875,
+          44.945,
+          44.63,
+          41.115,
+          45.82,
+          42.775,
+          43.16,
+          45.475,
+          44.08,
+          45.97,
+          45.175,
+          43.805,
+          45.32
+        ]
+      },
+      {
+        "editor": "lvce",
+        "repeat": 4,
+        "filename": "editorOptions.ts",
+        "status": "passed",
+        "milliseconds": [
+          51.775,
+          44.96,
+          42.205,
+          44.285,
+          42.755,
+          43.37,
+          43.715,
+          43.07,
+          46.35,
+          42.75,
+          44.685,
+          43.625,
+          43.485,
+          43.605,
+          44.045,
+          46.25,
+          44.825
+        ]
+      }
+    ]
+  },
+  "nativeRipgrep": {
+    "command": [
+      "rg",
+      "--files",
+      "--sort-files",
+      "--hidden",
+      "--glob",
+      "!.git",
+      "--glob",
+      "!elm-stuff"
+    ],
+    "iterations": 30,
+    "milliseconds": [
+      55.447508002544055,
+      55.23951799841598,
+      53.12130300080753,
+      48.383223002019804,
+      54.367624998121755,
+      48.13455600015004,
+      49.08280300151091,
+      48.37433599823271,
+      65.8873299980769,
+      48.27093400308513,
+      52.18893799974467,
+      45.36588400151231,
+      48.26680499900249,
+      54.150177998963045,
+      54.279600000882056,
+      55.62972899861052,
+      52.95822599873645,
+      48.09865100105526,
+      69.31896300011431,
+      74.2835870005365,
+      75.75544299834291,
+      55.385561998264166,
+      46.41625099975499,
+      72.68756900157314,
+      52.9135140022845,
+      48.25987200092641,
+      75.93071999872336,
+      65.95641000239993,
+      47.655400001531234,
+      51.832450000802055
+    ],
+    "bytes": 230639,
+    "files": 4417
+  },
+  "diagnosticRpcCalls": [
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "QuickPick.create2",
+      "milliseconds": 0.605
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "SearchFile.searchFile",
+      "milliseconds": 57.795
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 2.3
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 4.035
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 8.275
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 8.33
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 10.22
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 11.74
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 13.85
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 15.805
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 17.995
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 19.705
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 21.615
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 23.615
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "QuickPick.loadContent",
+      "milliseconds": 87.525
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "QuickPick.diff2",
+      "milliseconds": 0.175
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "QuickPick.render2",
+      "milliseconds": 1.12
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "QuickPick.renderEventListeners",
+      "milliseconds": 0.15
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "QuickPick.getKeyBindings",
+      "milliseconds": 0.155
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "QuickPick.diff2",
+      "milliseconds": 0.21
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "SearchFile.searchFile",
+      "milliseconds": 81.455
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 1.605
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 2.565
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 3.55
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 4.63
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 6.305
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 7.24
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 8.33
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 9.125
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 10.52
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 11.965
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 12.13
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "QuickPick.diff2",
+      "milliseconds": 0.19
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "QuickPick.render2",
+      "milliseconds": 0.855
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "SearchFile.searchFile",
+      "milliseconds": 87.06
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "QuickPick.diff2",
+      "milliseconds": 0.31
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "QuickPick.render2",
+      "milliseconds": 1.79
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "SearchFile.searchFile",
+      "milliseconds": 72.13
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 0.935
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 2.1
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "QuickPick.diff2",
+      "milliseconds": 0.265
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "QuickPick.render2",
+      "milliseconds": 0.855
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "SearchFile.searchFile",
+      "milliseconds": 60.925
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 1.95
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "QuickPick.diff2",
+      "milliseconds": 0.3
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "QuickPick.render2",
+      "milliseconds": 1.685
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "SearchFile.searchFile",
+      "milliseconds": 59.24
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 1.0
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "QuickPick.diff2",
+      "milliseconds": 0.11
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "QuickPick.render2",
+      "milliseconds": 1.18
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "SearchFile.searchFile",
+      "milliseconds": 64.685
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 1.445
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 2.495
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "QuickPick.diff2",
+      "milliseconds": 0.56
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "QuickPick.render2",
+      "milliseconds": 1.005
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "SearchFile.searchFile",
+      "milliseconds": 62.36
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 1.13
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "QuickPick.diff2",
+      "milliseconds": 0.085
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "QuickPick.render2",
+      "milliseconds": 0.86
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "SearchFile.searchFile",
+      "milliseconds": 61.075
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "QuickPick.diff2",
+      "milliseconds": 5.655
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "QuickPick.render2",
+      "milliseconds": 0.76
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "SearchFile.searchFile",
+      "milliseconds": 68.155
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "QuickPick.diff2",
+      "milliseconds": 0.13
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "QuickPick.render2",
+      "milliseconds": 1.22
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "SearchFile.searchFile",
+      "milliseconds": 66.425
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "QuickPick.diff2",
+      "milliseconds": 0.21
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "QuickPick.render2",
+      "milliseconds": 1.585
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "SearchFile.searchFile",
+      "milliseconds": 63.55
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "QuickPick.diff2",
+      "milliseconds": 0.245
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "QuickPick.render2",
+      "milliseconds": 0.835
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "SearchFile.searchFile",
+      "milliseconds": 70.98
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "QuickPick.diff2",
+      "milliseconds": 0.37
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "QuickPick.render2",
+      "milliseconds": 0.58
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "SearchFile.searchFile",
+      "milliseconds": 88.595
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "QuickPick.diff2",
+      "milliseconds": 0.475
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "QuickPick.render2",
+      "milliseconds": 10.47
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "SearchFile.searchFile",
+      "milliseconds": 61.15
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "QuickPick.diff2",
+      "milliseconds": 0.245
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "QuickPick.render2",
+      "milliseconds": 1.24
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "SearchFile.searchFile",
+      "milliseconds": 74.045
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "QuickPick.diff2",
+      "milliseconds": 3.66
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "QuickPick.render2",
+      "milliseconds": 0.65
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "SearchFile.searchFile",
+      "milliseconds": 62.895
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "QuickPick.diff2",
+      "milliseconds": 0.2
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "QuickPick.render2",
+      "milliseconds": 0.725
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "SearchFile.searchFile",
+      "milliseconds": 63.73
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "QuickPick.diff2",
+      "milliseconds": 1.58
+    },
+    {
+      "worker": "rendererWorkerMain.js",
+      "method": "QuickPick.render2",
+      "milliseconds": 0.96
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Workspace.getPath",
+      "milliseconds": 0.165
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "FileSearch.searchFile",
+      "milliseconds": 61.96
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 2.675
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 4.41
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 8.78
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 8.88
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 10.59
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 12.205
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 14.3
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 16.115
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 18.265
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 20.21
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 21.93
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 23.895
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Viewlet.queueCommands",
+      "milliseconds": 0.785
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Focus.setFocus",
+      "milliseconds": 0.29
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Viewlet.requestRender",
+      "milliseconds": 0.36
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Workspace.getPath",
+      "milliseconds": 0.49
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "FileSearch.searchFile",
+      "milliseconds": 84.65
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 1.885
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 2.815
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 3.825
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 4.995
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 6.685
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 7.62
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 8.82
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 9.63
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 11.015
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 12.455
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 12.555
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Viewlet.queueCommands",
+      "milliseconds": 0.47
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Viewlet.requestRender",
+      "milliseconds": 4.9
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Workspace.getPath",
+      "milliseconds": 0.265
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "FileSearch.searchFile",
+      "milliseconds": 91.34
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Viewlet.queueCommands",
+      "milliseconds": 0.73
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Viewlet.requestRender",
+      "milliseconds": 6.35
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Workspace.getPath",
+      "milliseconds": 0.32
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "FileSearch.searchFile",
+      "milliseconds": 74.96
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 2.22
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 2.395
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Viewlet.queueCommands",
+      "milliseconds": 0.395
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Viewlet.requestRender",
+      "milliseconds": 2.555
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Workspace.getPath",
+      "milliseconds": 0.255
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "FileSearch.searchFile",
+      "milliseconds": 63.675
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 3.24
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Viewlet.queueCommands",
+      "milliseconds": 0.51
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Viewlet.requestRender",
+      "milliseconds": 7.945
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Workspace.getPath",
+      "milliseconds": 0.545
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "FileSearch.searchFile",
+      "milliseconds": 61.35
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 1.24
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Viewlet.queueCommands",
+      "milliseconds": 0.58
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Viewlet.requestRender",
+      "milliseconds": 2.985
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Workspace.getPath",
+      "milliseconds": 0.175
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "FileSearch.searchFile",
+      "milliseconds": 66.805
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 1.745
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 2.775
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Viewlet.queueCommands",
+      "milliseconds": 0.465
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Viewlet.requestRender",
+      "milliseconds": 3.185
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Workspace.getPath",
+      "milliseconds": 0.95
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "FileSearch.searchFile",
+      "milliseconds": 64.355
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "IconTheme.getFileIcon",
+      "milliseconds": 1.295
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Viewlet.queueCommands",
+      "milliseconds": 0.37
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Viewlet.requestRender",
+      "milliseconds": 2.93
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Workspace.getPath",
+      "milliseconds": 0.34
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "FileSearch.searchFile",
+      "milliseconds": 64.08
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Viewlet.queueCommands",
+      "milliseconds": 0.32
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Viewlet.requestRender",
+      "milliseconds": 7.495
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Workspace.getPath",
+      "milliseconds": 0.26
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "FileSearch.searchFile",
+      "milliseconds": 70.47
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Viewlet.queueCommands",
+      "milliseconds": 0.295
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Viewlet.requestRender",
+      "milliseconds": 2.385
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Workspace.getPath",
+      "milliseconds": 1.645
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "FileSearch.searchFile",
+      "milliseconds": 69.24
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Viewlet.queueCommands",
+      "milliseconds": 1.2
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Viewlet.requestRender",
+      "milliseconds": 3.37
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Workspace.getPath",
+      "milliseconds": 0.165
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "FileSearch.searchFile",
+      "milliseconds": 66.575
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Viewlet.queueCommands",
+      "milliseconds": 0.375
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Viewlet.requestRender",
+      "milliseconds": 2.555
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Workspace.getPath",
+      "milliseconds": 0.375
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "FileSearch.searchFile",
+      "milliseconds": 76.27
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Viewlet.queueCommands",
+      "milliseconds": 0.25
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Viewlet.requestRender",
+      "milliseconds": 2.085
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Workspace.getPath",
+      "milliseconds": 0.375
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "FileSearch.searchFile",
+      "milliseconds": 91.495
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Viewlet.queueCommands",
+      "milliseconds": 0.28
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Viewlet.requestRender",
+      "milliseconds": 17.66
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Workspace.getPath",
+      "milliseconds": 1.305
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "FileSearch.searchFile",
+      "milliseconds": 64.47
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Viewlet.queueCommands",
+      "milliseconds": 0.35
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Viewlet.requestRender",
+      "milliseconds": 3.025
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Workspace.getPath",
+      "milliseconds": 0.315
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "FileSearch.searchFile",
+      "milliseconds": 76.48
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Viewlet.queueCommands",
+      "milliseconds": 0.285
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Viewlet.requestRender",
+      "milliseconds": 5.285
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Workspace.getPath",
+      "milliseconds": 0.36
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "FileSearch.searchFile",
+      "milliseconds": 66.105
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Viewlet.queueCommands",
+      "milliseconds": 0.455
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Viewlet.requestRender",
+      "milliseconds": 2.125
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Workspace.getPath",
+      "milliseconds": 0.475
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "FileSearch.searchFile",
+      "milliseconds": 66.54
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Viewlet.queueCommands",
+      "milliseconds": 0.6
+    },
+    {
+      "worker": "quickPickWorkerMain.js",
+      "method": "Viewlet.requestRender",
+      "milliseconds": 6.465
+    },
+    {
+      "worker": "fileSearchWorkerMain.js",
+      "method": "SearchProcess.invoke",
+      "milliseconds": 58.9
+    },
+    {
+      "worker": "fileSearchWorkerMain.js",
+      "method": "SearchProcess.invoke",
+      "milliseconds": 82.665
+    },
+    {
+      "worker": "fileSearchWorkerMain.js",
+      "method": "SearchProcess.invoke",
+      "milliseconds": 88.105
+    },
+    {
+      "worker": "fileSearchWorkerMain.js",
+      "method": "SearchProcess.invoke",
+      "milliseconds": 73.3
+    },
+    {
+      "worker": "fileSearchWorkerMain.js",
+      "method": "SearchProcess.invoke",
+      "milliseconds": 61.885
+    },
+    {
+      "worker": "fileSearchWorkerMain.js",
+      "method": "SearchProcess.invoke",
+      "milliseconds": 60.04
+    },
+    {
+      "worker": "fileSearchWorkerMain.js",
+      "method": "SearchProcess.invoke",
+      "milliseconds": 65.395
+    },
+    {
+      "worker": "fileSearchWorkerMain.js",
+      "method": "SearchProcess.invoke",
+      "milliseconds": 62.975
+    },
+    {
+      "worker": "fileSearchWorkerMain.js",
+      "method": "SearchProcess.invoke",
+      "milliseconds": 62.275
+    },
+    {
+      "worker": "fileSearchWorkerMain.js",
+      "method": "SearchProcess.invoke",
+      "milliseconds": 68.965
+    },
+    {
+      "worker": "fileSearchWorkerMain.js",
+      "method": "SearchProcess.invoke",
+      "milliseconds": 67.37
+    },
+    {
+      "worker": "fileSearchWorkerMain.js",
+      "method": "SearchProcess.invoke",
+      "milliseconds": 64.51
+    },
+    {
+      "worker": "fileSearchWorkerMain.js",
+      "method": "SearchProcess.invoke",
+      "milliseconds": 73.52
+    },
+    {
+      "worker": "fileSearchWorkerMain.js",
+      "method": "SearchProcess.invoke",
+      "milliseconds": 89.635
+    },
+    {
+      "worker": "fileSearchWorkerMain.js",
+      "method": "SearchProcess.invoke",
+      "milliseconds": 62.525
+    },
+    {
+      "worker": "fileSearchWorkerMain.js",
+      "method": "SearchProcess.invoke",
+      "milliseconds": 75.005
+    },
+    {
+      "worker": "fileSearchWorkerMain.js",
+      "method": "SearchProcess.invoke",
+      "milliseconds": 63.99
+    },
+    {
+      "worker": "fileSearchWorkerMain.js",
+      "method": "SearchProcess.invoke",
+      "milliseconds": 64.765
+    }
+  ],
+  "restoredBaseline": {
+    "created": "2026-09-30T09:10:01.301Z",
+    "sourceSha256": "c6749c1157569122081ca0b594faff49e83f539afb25d99ac2cd1bfdfcb14a14",
+    "trials": [
+      {
+        "editor": "lvce",
+        "repeat": 0,
+        "filename": "quickOpenModel.ts",
+        "status": "passed",
+        "milliseconds": [
+          111.235,
+          110.335,
+          92.68,
+          110.605,
+          109.84,
+          108.33,
+          108.01,
+          92.43,
+          111.41,
+          107.245,
+          111.925,
+          95.785,
+          127.15,
+          96.265,
+          94.02,
+          93.7,
+          93.18,
+          94.925
+        ]
+      },
+      {
+        "editor": "lvce",
+        "repeat": 0,
+        "filename": "editorOptions.ts",
+        "status": "passed",
+        "milliseconds": [
+          155.725,
+          126.36,
+          140.875,
+          124,
+          141.135,
+          125.765,
+          110.6,
+          141.655,
+          123.93,
+          124.595,
+          111.825,
+          109.835,
+          109.935,
+          110.845,
+          111.525,
+          109.855,
+          94.89
+        ]
+      },
+      {
+        "editor": "lvce",
+        "repeat": 1,
+        "filename": "quickOpenModel.ts",
+        "status": "passed",
+        "milliseconds": [
+          144.725,
+          126.995,
+          92.745,
+          93.75,
+          126.32,
+          108.215,
+          123.97,
+          106.275,
+          123.705,
+          123.815,
+          106.86,
+          110.935,
+          126.955,
+          108.15,
+          110.71,
+          112.49,
+          141.845,
+          141.895
+        ]
+      },
+      {
+        "editor": "lvce",
+        "repeat": 1,
+        "filename": "editorOptions.ts",
+        "status": "passed",
+        "milliseconds": [
+          121.865,
+          143.315,
+          128.865,
+          125.66,
+          127.55,
+          110.72,
+          125.73,
+          110.75,
+          126.08,
+          94.13,
+          91.05,
+          110.665,
+          127.185,
+          107.135,
+          127.77,
+          94.535,
+          110.86
+        ]
+      }
+    ]
+  },
+  "freshness": [
+    {
+      "variant": "snapshot",
+      "file": "QuickpickFreshnessProbe.ts",
+      "visible": false,
+      "timeoutMs": 5000
+    },
+    {
+      "variant": "restored",
+      "file": "QuickpickFreshnessProbe.ts",
+      "visible": true,
+      "timeoutMs": 5000
+    }
+  ]
+}
