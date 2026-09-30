@@ -5,7 +5,7 @@ import { arm, collect, adapters } from '../src/adapters.ts'
 import { summarize } from '../src/profiles.ts'
 import { render, statistics } from '../../report/src/render.ts'
 import { launch } from '../src/launch.ts'
-import { readdir, mkdir, writeFile, rm } from 'node:fs/promises'
+import { readdir, mkdir, readFile, writeFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 
 const profile = { startTime: 0, endTime: 6000, nodes: [{ id: 1, callFrame: { functionName: 'filter', url: 'app.js' } }, { id: 2, callFrame: { functionName: '(idle)', url: '' } }, { id: 3, callFrame: { functionName: '(garbage collector)', url: '' } }], samples: [1, 2, 3], timeDeltas: [1000, 2000, 3000] }
@@ -24,6 +24,9 @@ test('statistics and report preserve unavailable data and escape external labels
   assert(!html.includes('<script>x</script>'))
   assert(html.includes('&lt;script&gt;'))
   assert(html.includes('raw/results.json'))
+  const threeEditors = render({ created: 'today', editors: [{ id: 'lvce', name: 'LVCE Editor', version: '1' }, { id: 'vscode', name: 'VS Code', version: '1' }, { id: 'theia', name: 'Eclipse Theia IDE', version: '1' }], trials: [], repeats: 1, fixture: { commit: 'abc' } })
+  assert(threeEditors.includes('LVCE Editor × VS Code × Eclipse Theia'))
+  assert(threeEditors.includes('viewBox="0 0 640 235"'))
 })
 test('current highlights distinguish unchanged filenames from stale results; timeout and page crash reject', async () => {
   const browser = await chromium.launch({ executablePath: process.env.CHROME_BIN })
@@ -54,13 +57,36 @@ test('current highlights distinguish unchanged filenames from stale results; tim
     await rejected
   } finally { await browser.close() }
 })
-test('startup failure and timeout dispose the isolated profile and child process group', async () => {
+test('Theia quick-open uses its query-qualified Monaco adapter', async () => {
+  const browser = await chromium.launch({ executablePath: process.env.CHROME_BIN })
+  try {
+    const page = await browser.newPage()
+    await page.setContent('<div class="quick-input-widget"><input aria-label="Search files by name" value=""></div><div class="quick-input-list"><div class="monaco-list-row"><span class="label-name"><span class="highlight"></span>est.ts</span></div></div>')
+    await page.evaluate(() => document.querySelector('input')!.addEventListener('input', event => { document.querySelector('.highlight')!.textContent = (event.target as HTMLInputElement).value }))
+    await page.locator('input').focus()
+    await arm(page, adapters.theia, 't')
+    await page.keyboard.press('t')
+    const result = await collect(page)
+    assert.equal(result.query, 't')
+    assert.equal(result.rows[0].label, 'test.ts')
+  } finally { await browser.close() }
+})
+test('startup failure and timeout dispose the isolated profile and detached child processes', async () => {
   const before = (await readdir(tmpdir())).filter(x => x.startsWith('quickpick-benchmark-test-cleanup-')).sort()
   await mkdir('.tmp/apps/test-cleanup', { recursive: true })
-  await writeFile('.tmp/apps/test-cleanup/sleep.sh', '#!/bin/sh\nsleep 60 &\nwait\n', { mode: 0o755 })
+  const marker = '.tmp/test-cleanup-child.pid'
+  await writeFile('.tmp/apps/test-cleanup/sleep.cjs', `const { spawn } = require('node:child_process'); const { writeFileSync } = require('node:fs'); const child = spawn(process.execPath, ['-e', 'setInterval(() => {}, 60000)'], { detached: true, stdio: 'ignore' }); writeFileSync('${marker}', String(child.pid)); setInterval(() => {}, 60000)\n`)
+  await writeFile('.tmp/apps/test-cleanup/sleep.sh', '#!/bin/sh\nexec node .tmp/apps/test-cleanup/sleep.cjs\n', { mode: 0o755 })
   try {
     await assert.rejects(launch({ id: 'test-cleanup', name: 'test', version: '0', binary: 'missing' }, false, '.tmp/missing.log', 200), /ENOENT/)
     await assert.rejects(launch({ id: 'test-cleanup', name: 'test', version: '0', binary: 'sleep.sh' }, false, '.tmp/timeout.log', 200), /timeout/)
+    const childPid = Number(await readFile(marker, 'utf8'))
+    let running = true
+    for (let attempt = 0; attempt < 20 && running; attempt++) {
+      try { const stat = await readFile(`/proc/${childPid}/stat`, 'utf8'); running = stat.slice(stat.lastIndexOf(')') + 2).split(' ')[0] !== 'Z' } catch { running = false }
+      if (running) await new Promise(resolve => setTimeout(resolve, 50))
+    }
+    assert.equal(running, false, 'detached descendants must be stopped before profile cleanup')
     assert.deepEqual((await readdir(tmpdir())).filter(x => x.startsWith('quickpick-benchmark-test-cleanup-')).sort(), before)
-  } finally { await rm('.tmp/apps/test-cleanup', { recursive: true, force: true }) }
+  } finally { await rm('.tmp/apps/test-cleanup', { recursive: true, force: true }); await rm(marker, { force: true }) }
 })

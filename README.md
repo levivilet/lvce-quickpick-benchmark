@@ -1,16 +1,17 @@
 # LVCE quickpick benchmark
 
-Compare desktop LVCE Editor and VS Code file quickpick opening, incremental filtering,
-and frontend/backend sampled JavaScript activity. Results from `main` are published at
+Compare desktop LVCE Editor, VS Code, and Eclipse Theia file quickpick opening,
+incremental filtering, and frontend/backend sampled JavaScript activity. Results from `main` are published at
 https://levivilet.github.io/lvce-quickpick-benchmark/.
 
 ## Run
 
 Linux x64, Node 24.15+, Git, `tar`, `dpkg-deb`, `ripgrep` (`rg`), and Electron system libraries are required.
 The editor binaries are pinned with SHA256 checksums in `config/editors.lock.json`.
+Theia's official Linux AppImage is extracted during setup, so FUSE is not required.
 The benchmark workspace is the **VS Code source tree at tag 1.39.0**, commit
 `9df03c6d6ce97c6645c5846f6dfa2a6a7d276515`; this is distinct from the VS Code executable version.
-Setup downloads approximately 500 MB. No fixture dependencies are installed or executed.
+Setup downloads approximately 900 MB. No fixture dependencies are installed or executed.
 
 ```sh
 npm ci
@@ -20,9 +21,9 @@ npm run report
 # Serve site/ with any static HTTP server.
 ```
 
-Use `--editor lvce` or `--editor vscode` and `--mode latency` or `--mode profile`
+Use `--editor lvce`, `--editor vscode`, or `--editor theia` and `--mode latency` or `--mode profile`
 for focused diagnosis. These options overwrite `results/results.json` with that run.
-Without them, every repetition measures both editors, both filenames, and both modes.
+Without them, every repetition measures all three editors, both filenames, and both modes.
 Raw JSON, Chromium `.cpuprofile` files, screenshots and application logs are retained
 in `results/`. `site/raw/` publishes these files alongside the charts.
 
@@ -30,7 +31,7 @@ in `results/`. `site/raw/` publishes these files alongside the charts.
 
 Each trial launches the same source fixture in a fresh profile, with separate
 Chromium user data and XDG config/data/cache/state directories. The actual home
-directory is preserved. A dedicated process group is killed and its profile removed
+directory is preserved. The editor process tree is stopped and its profile removed
 on completion, launch failure, timeout or editor crash. Runs use Xvfb; they do not
 control an existing desktop editor. Third-party extensions, updates and telemetry are
 disabled where the editor supports those launch/settings options.
@@ -40,7 +41,8 @@ one warmup of the same complete query, closes quickpick, waits for initialized w
 targets, then measures reopening and typing one character at a time. VS Code's late
 TextMate worker must be ready before measurement. Editor order alternates across
 repetitions. These are **warm quickpick searches**, not cold disk-cache measurements.
-The operating-system cache is not flushed.
+The operating-system cache is not flushed. Theia opens the fixture in restricted mode
+and declines its trust prompt, so benchmark searches do not enable workspace code.
 
 Latency uses a trusted renderer keydown timestamp. Completion requires the expected
 input value, focused input, a visible result whose concatenated filename highlights
@@ -58,6 +60,7 @@ Profiling runs separately, using the same search, with V8 sampling at 1 ms:
 - Frontend: all discovered Chromium page/worker/iframe isolates, deduplicated by V8
   isolate ID. LVCE's worker architecture is included, not just its thin renderer.
 - Backend: Electron main plus every live utility created by `utilityProcess.fork`.
+  Theia's forked backend process is instrumented and profiled as well.
   The harness pauses the original main entrypoint using the Node inspector, wraps
   `fork` to add `--inspect=0`, resumes execution, and discovers each inspector from
   stderr. It retains module path, PID, argv, raw profile, interval and sample count.
@@ -93,8 +96,8 @@ For a locally unsupported Playwright host OS, set `CHROME_BIN` to a compatible C
 executable for the browser regression tests. Desktop benchmark binaries remain pinned.
 Tests cover stale highlights with unchanged filenames, timeout/page-close behavior,
 launch cleanup, profile accounting and report output. Every PR must pass `Check` and
-`Desktop benchmark (both editors)`; the latter runs real desktop latency and profiling
-trials for both queries and both editors. Main runs five repetitions and deploys Pages
+`Desktop benchmark (all three editors)`; the latter runs real desktop latency and profiling
+trials for both queries and all three editors. Main runs five repetitions and deploys Pages
 only after successful benchmarking. Dependencies are cached by OS, architecture,
 Node version file and lockfile. Editor archives are checksum-verified even on cache hits.
 

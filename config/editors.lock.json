@@ -16,5 +16,14 @@
     "url": "https://vscode.download.prss.microsoft.com/dbazure/download/stable/88e44fa0e00b08f7758b4f6d05632e4fd5e4df6f/code-stable-x64-1788561485.tar.gz",
     "sha256": "2bab551c3677d33010e317a7845e61d2f0fa0c80f8518399c42e0f941f64f18f",
     "binary": "VSCode-linux-x64/code"
+  },
+  {
+    "id": "theia",
+    "name": "Eclipse Theia IDE",
+    "version": "1.75.0.117",
+    "archive": "TheiaIDE.AppImage",
+    "url": "https://download.eclipse.org/theia/ide/1.75.0/linux/TheiaIDE.AppImage",
+    "sha256": "f1eb94544230f1b44c124d40a1e437ef6c81ae91c62e37b11f4f9d168a8d7358",
+    "binary": "squashfs-root/theia-ide-electron-app.bin"
   }
 ]

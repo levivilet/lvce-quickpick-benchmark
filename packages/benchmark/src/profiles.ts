@@ -40,7 +40,7 @@ export async function profileWorkload(app: Awaited<ReturnType<typeof launch>>, o
     if (!app.main) throw new Error('Missing main-process inspector')
     const mainMetadata = await app.main.send('Runtime.evaluate', { expression: '({pid:process.pid,argv:process.argv})', returnByValue: true })
     sessions.push({ session: app.main, side: 'backend', identity: { role: 'main', ...mainMetadata.result.value } })
-    const utilities = async (): Promise<{ pid: number; file: string; alive: boolean }[]> => (await app.main!.send('Runtime.evaluate', { expression: 'globalThis.__benchmarkUtilities.filter(x=>x.alive)', returnByValue: true })).result.value
+    const utilities = async (): Promise<{ pid: number; file: string; kind: string; alive: boolean }[]> => (await app.main!.send('Runtime.evaluate', { expression: 'globalThis.__benchmarkProcesses.filter(x=>x.alive)', returnByValue: true })).result.value
     const before = await utilities()
     const attachedPids = new Set<number>([mainMetadata.result.value.pid])
     const inaccessible: string[] = []
@@ -51,11 +51,12 @@ export async function profileWorkload(app: Awaited<ReturnType<typeof launch>>, o
         const { result } = await session.send('Runtime.evaluate', { expression: '({pid:process.pid,argv:process.argv})', returnByValue: true })
         if (!before.some(x => x.pid === result.value.pid) || attachedPids.has(result.value.pid)) { session.close(); continue }
         attachedPids.add(result.value.pid)
-        sessions.push({ session, side: 'backend', identity: { role: 'utility', ...result.value, file: before.find(x => x.pid === result.value.pid)!.file }, owned: session })
+        const record = before.find(x => x.pid === result.value.pid)!
+        sessions.push({ session, side: 'backend', identity: { role: record.kind === 'fork' ? 'child-process' : 'utility', ...result.value, file: record.file }, owned: session })
       } catch (error) { session?.close(); inaccessible.push(String(error)) }
     }
     if (!before.length || before.some(x => !attachedPids.has(x.pid))) throw new Error(`Missing live utility inspector coverage: ${JSON.stringify({ before, attachedPids: [...attachedPids], inaccessible })}`)
-    if (!sessions.some(x => x.identity.type === 'worker') && app.editorId === 'lvce') throw new Error('Missing frontend worker coverage')
+    if (!sessions.some(x => x.identity.type === 'worker') && ['lvce', 'theia'].includes(app.editorId)) throw new Error('Missing frontend worker coverage')
     for (const { session } of sessions) { await session.send('Profiler.enable'); await session.send('Profiler.setSamplingInterval', { interval: 1000 }) }
     for (const { session } of sessions) await session.send('Profiler.start')
     actionResult = await action()
