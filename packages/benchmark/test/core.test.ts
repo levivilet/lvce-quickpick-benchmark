@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { chromium } from 'playwright'
 import { arm, collect, adapters } from '../src/adapters.ts'
-import { summarize } from '../src/profiles.ts'
+import { rendererJavaScriptMs, summarize } from '../src/profiles.ts'
 import { render, statistics } from '../../report/src/render.ts'
 import { launch } from '../src/launch.ts'
 import { summarizeRenderingTrace } from '../src/rendering.ts'
@@ -16,15 +16,41 @@ test('profile accounting excludes idle and VM samples and rejects incomplete dat
   assert.throws(() => summarize({ ...profile, samples: [99, 2, 3] }))
   assert.throws(() => summarize({ ...profile, samples: [], timeDeltas: [] }))
 })
+test('renderer JavaScript uses only the application page profile and requires its coverage', () => {
+  const results = [
+    { side: 'frontend', identity: { targetId: 'application-page', type: 'page' }, javascriptMs: 3 },
+    { side: 'frontend', identity: { targetId: 'worker', type: 'worker' }, javascriptMs: 100 },
+    { side: 'frontend', identity: { targetId: 'iframe', type: 'iframe' }, javascriptMs: 200 },
+    { side: 'backend', identity: { targetId: 'application-page', role: 'main' }, javascriptMs: 300 },
+  ]
+  assert.equal(rendererJavaScriptMs(results, 'application-page'), 3)
+  assert.equal(rendererJavaScriptMs([{ ...results[0], javascriptMs: 0 }], 'application-page'), 0)
+  assert.throws(() => rendererJavaScriptMs(results.slice(1), 'application-page'), /coverage/)
+  assert.throws(() => rendererJavaScriptMs([results[0], results[0]], 'application-page'), /coverage/)
+})
 test('statistics and report preserve unavailable data and escape external labels', () => {
   assert.equal(statistics([4, 1, 2, 3]).median, 2.5)
   assert.equal(statistics([4, 1, 2, 3]).p95, 4)
   assert.throws(() => statistics([NaN]))
   const html = render({ created: 'today', editors: [{ id: 'lvce', name: '<script>x</script>', version: '1' }], trials: [], repeats: 1, fixture: { commit: 'abc' } })
   assert(html.includes('Unavailable'))
+  assert(html.includes('Renderer JavaScript'))
+  assert(html.includes('application page isolate'))
   assert(!html.includes('<script>x</script>'))
   assert(html.includes('&lt;script&gt;'))
   assert(html.includes('raw/results.json'))
+})
+test('report renders zero renderer activity and keeps missing renderer data unavailable', () => {
+  const base = { created: 'today', editors: [{ id: 'lvce', name: 'LVCE', version: '1' }], repeats: 1, fixture: { commit: 'abc' } }
+  const trials = (rendererJavaScriptMs?: number) => [
+    { editor: 'lvce', mode: 'latency', status: 'passed', repeat: 0, samples: [{ milliseconds: 0 }, { milliseconds: 0 }] },
+    { editor: 'lvce', mode: 'profile', status: 'passed', repeat: 0, profile: { rendererJavaScriptMs, frontendMs: 0, backendMs: 0 } },
+  ]
+  const html = render({ ...base, trials: trials(0) })
+  assert(html.includes('0.00 ms'))
+  const unavailable = render({ ...base, trials: trials() })
+  assert(unavailable.includes('Renderer JavaScript'))
+  assert(unavailable.includes('Unavailable'))
 })
 test('rendering metrics use only complete main-frame events and convert trace microseconds', () => {
   const trace = { traceEvents: [

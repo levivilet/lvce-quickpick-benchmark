@@ -1,7 +1,7 @@
 # LVCE quickpick benchmark
 
 Compare desktop LVCE Editor and VS Code file quickpick opening, incremental filtering,
-frontend/backend sampled JavaScript activity, renderer traffic, CSS style recalculation
+renderer-only and frontend/backend sampled JavaScript activity, renderer traffic, CSS style recalculation
 and paint work. Results from `main` are published at
 https://levivilet.github.io/lvce-quickpick-benchmark/.
 
@@ -59,6 +59,9 @@ Profiling runs separately, using the same search, with V8 sampling at 1 ms:
 
 - Frontend: all discovered Chromium page/worker/iframe isolates, deduplicated by V8
   isolate ID. LVCE's worker architecture is included, not just its thin renderer.
+- Renderer JavaScript: sampled JavaScript milliseconds from the identified top-level
+  application page isolate per search. Iframe and worker isolates are excluded from
+  this measure and remain included in the broader frontend total and raw profiles.
 - Backend: Electron main plus every live utility created by `utilityProcess.fork`.
   The harness pauses the original main entrypoint using the Node inspector, wraps
   `fork` to add `--inspect=0`, resumes execution, and discovers each inspector from
