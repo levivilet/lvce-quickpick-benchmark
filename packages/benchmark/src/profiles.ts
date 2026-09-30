@@ -62,8 +62,9 @@ export async function profileWorkload(app: Awaited<ReturnType<typeof launch>>, o
         sessions.push({ session, side: 'backend', identity: { role: record.kind === 'fork' ? 'child-process' : 'utility', ...result.value, file: record.file }, owned: session })
       } catch (error) { session?.close(); inaccessible.push(String(error)) }
     }
-    if (!before.length || before.some(x => !attachedPids.has(x.pid))) throw new Error(`Missing live utility inspector coverage: ${JSON.stringify({ before, attachedPids: [...attachedPids], inaccessible })}`)
-    if (!sessions.some(x => x.identity.type === 'worker') && ['lvce', 'theia'].includes(app.editorId)) throw new Error('Missing frontend worker coverage')
+    const uncovered = before.filter(x => !attachedPids.has(x.pid))
+    if ((app.profileCapabilities.requireBackendProcess && !before.length) || uncovered.length) throw new Error(`Missing live backend inspector coverage: ${JSON.stringify({ before, attachedPids: [...attachedPids], inaccessible, uncovered })}`)
+    if (app.profileCapabilities.requireRendererWorker && !sessions.some(x => x.identity.type === 'worker')) throw new Error('Missing frontend worker coverage')
     for (const { session } of sessions) { await session.send('Profiler.enable'); await session.send('Profiler.setSamplingInterval', { interval: 1000 }) }
     for (const { session } of sessions) await session.send('Profiler.start')
     actionResult = await action()

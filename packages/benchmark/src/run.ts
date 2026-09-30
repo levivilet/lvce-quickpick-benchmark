@@ -26,7 +26,7 @@ const report: any = { protocol: 'query-highlights-two-frames-v1', created: new D
 for (let repeat = 0; repeat < repeats; repeat++) {
   // Alternate editor order across repetitions to reduce order bias.
   const order = repeat % 2 ? [...editors].reverse() : editors
-  for (const editor of order.filter(x => !values.editor || x.id === values.editor)) for (const mode of ['latency', 'profile', 'traffic', 'render', 'paint'].filter(x => !values.mode || x === values.mode)) for (const filename of filenames) {
+  for (const editor of order.filter(x => !values.editor || x.id === values.editor)) for (const mode of (editor.id === 'atom' ? ['latency', 'profile'] : ['latency', 'profile', 'traffic', 'render', 'paint']).filter(x => !values.mode || x === values.mode)) for (const filename of filenames) {
     const key = `${editor.id}-${mode}-${repeat}-${filename}`
     const trial: any = { editor: editor.id, mode, repeat, filename, status: 'failed' }
     let app: Awaited<ReturnType<typeof launch>> | undefined

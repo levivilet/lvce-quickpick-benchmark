@@ -1,1 +1,1 @@
-{"name": "@quickpick-benchmark/benchmark", "private": true, "type": "module"}
+{"name":"@quickpick-benchmark/benchmark","private":true,"type":"module","dependencies":{"ws":"^8.22.0"}}
