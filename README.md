@@ -1,7 +1,8 @@
 # LVCE quickpick benchmark
 
 Compare desktop LVCE Editor and VS Code file quickpick opening, incremental filtering,
-and frontend/backend sampled JavaScript activity. Results from `main` are published at
+frontend/backend sampled JavaScript activity, renderer traffic, CSS style recalculation
+and paint work. Results from `main` are published at
 https://levivilet.github.io/lvce-quickpick-benchmark/.
 
 ## Run
@@ -20,11 +21,12 @@ npm run report
 # Serve site/ with any static HTTP server.
 ```
 
-Use `--editor lvce` or `--editor vscode` and `--mode latency` or `--mode profile` or `--mode traffic`
+Use `--editor lvce` or `--editor vscode` and `--mode latency`, `--mode profile`,
+`--mode traffic` or `--mode render`
 for focused diagnosis. These options overwrite `results/results.json` with that run.
-Without them, every repetition measures both editors, both filenames, and all three modes.
-Raw JSON, Chromium `.cpuprofile` files, screenshots and application logs are retained
-in `results/`. `site/raw/` publishes these files alongside the charts.
+Without them, every repetition measures both editors, both filenames, and all four modes.
+Raw JSON, Chromium `.cpuprofile` and rendering trace files, screenshots and application
+logs are retained in `results/`. `site/raw/` publishes these files alongside the charts.
 
 ## Protocol
 
@@ -92,9 +94,10 @@ npm test
 For a locally unsupported Playwright host OS, set `CHROME_BIN` to a compatible Chrome
 executable for the browser regression tests. Desktop benchmark binaries remain pinned.
 Tests cover stale highlights with unchanged filenames, timeout/page-close behavior,
-launch cleanup, profile accounting and report output. Every PR must pass `Check` and
-`Desktop benchmark (both editors)`; the latter runs real desktop latency, profiling and traffic
-trials for both queries and both editors. Main runs five repetitions and deploys Pages
+launch cleanup, profile and trace accounting, report output, and renderer-traffic
+coverage. Every PR must pass `Check` and
+`Desktop benchmark (both editors)`; the latter runs real desktop latency, profiling,
+traffic and rendering trials for both queries and both editors. Main runs five repetitions and deploys Pages
 only after successful benchmarking. Dependencies are cached by OS, architecture,
 Node version file and lockfile. Editor archives are checksum-verified even on cache hits.
 
@@ -106,7 +109,7 @@ coverage. Do not accept a new adapter based only on mocked DOM tests.
 
 The separate `--mode traffic` pass measures **incoming workbench messages** during
 opening and each character, using the same trusted-keydown to query-qualified
-visible-update boundary. The standard run includes all three passes. No instrumentation
+visible-update boundary. The standard run includes all four measurement passes. No instrumentation
 is added to the latency or profile passes. Raw `traffic.samples` retain the query,
 window timestamps, counts and logical bytes by transport; `traffic.worlds` records
 context identities, discovered port/worker counts and each world's original windows.
@@ -145,3 +148,19 @@ payload traversal add overhead. Do not use traffic-pass durations as latency res
 Implementation references: [CDP object discovery](https://chromedevtools.github.io/devtools-protocol/tot/Runtime/#method-queryObjects),
 [Electron session preloads](https://www.electronjs.org/docs/latest/api/session#sesregisterpreloadscriptscript),
 and [Electron MessagePorts](https://www.electronjs.org/docs/latest/tutorial/message-ports).
+
+## Rendering work
+
+The separate `--mode render` pass starts after the same full query has been warmed and
+quickpick closed. Tracing starts immediately before reopening and incrementally
+filtering the query, so setup and warmup events are excluded. Style recalculation sums
+main-frame Chromium `UpdateLayoutTree` event durations; paint work sums main-frame
+`Paint` event durations. Event counts are reported alongside durations. Frame identity
+comes from the quickpick main frame in the trace; missing style or paint evidence fails
+the measurement instead of reporting zero. Trace durations are converted from
+microseconds to milliseconds. Raw traces are linked per editor and query.
+
+Tracing and event filtering add overhead. The launcher uses `--disable-gpu`, so these
+results describe main-frame browser work in that environment and exclude GPU
+rasterization, compositing and physical display latency. They are event-duration totals,
+not end-to-end search latency or unique painted pixels.
