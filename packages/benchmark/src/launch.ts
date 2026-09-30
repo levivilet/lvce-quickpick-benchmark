@@ -6,6 +6,7 @@ import { setTimeout as delay } from 'node:timers/promises'
 import { chromium, type Browser } from 'playwright'
 import { Protocol } from './protocol.ts'
 import { trafficPreload } from './traffic-runtime.ts'
+import { prepareCursorProfile } from './cursor-profile.ts'
 
 export interface Editor { id: string; name: string; version: string; binary: string }
 export const utilityInstrumentation = `(()=>{
@@ -50,6 +51,7 @@ async function descendantsOf(rootPid: number): Promise<number[]> {
 export async function launch(editor: Editor, profile: boolean, logPath: string, startupTimeout = 30000, traffic = false) {
   const root = await mkdtemp(`${tmpdir()}/quickpick-benchmark-${editor.id}-`)
   const env = { ...process.env, VSCODE_CLI: '1' }
+  if (editor.id === 'cursor') (env as NodeJS.ProcessEnv).HOME = root
   for (const name of ['CONFIG', 'DATA', 'CACHE', 'STATE']) {
     const path = `${root}/${name}`
     ;(env as NodeJS.ProcessEnv)[`XDG_${name}_HOME`] = path
@@ -63,7 +65,11 @@ export async function launch(editor: Editor, profile: boolean, logPath: string, 
   const workspace = resolve('.tmp/fixture')
   const args = editor.id === 'theia'
     ? [workspace, '--no-sandbox', '--disable-gpu', '--remote-debugging-port=0', ...(profile || traffic ? ['--inspect-brk=0'] : []), '--user-data-dir', profileDir, '--disable-extensions', '--skip-welcome', '--skip-release-notes', '--disable-workspace-trust']
-    : ['--no-sandbox', '--disable-gpu', '--remote-debugging-port=0', ...(profile || traffic ? ['--inspect-brk=0'] : []), '--user-data-dir', profileDir, '--disable-extensions', '--skip-welcome', '--skip-release-notes', '--disable-workspace-trust', workspace]
+    : ['--no-sandbox', '--disable-gpu', '--remote-debugging-port=0', ...(profile || traffic ? ['--inspect-brk=0'] : []), '--user-data-dir', profileDir, '--disable-extensions', '--skip-welcome', '--skip-release-notes', '--disable-workspace-trust', ...(editor.id === 'cursor' ? ['--new-window'] : []), workspace]
+  if (editor.id === 'cursor') {
+    try { await prepareCursorProfile(resolve(`.tmp/apps/${editor.id}/${editor.binary}`), profileDir, workspace, env) }
+    catch (error) { await rm(root, { recursive: true, force: true }); throw error }
+  }
   const child = spawn(resolve(`.tmp/apps/${editor.id}/${editor.binary}`), args, { env, detached: true, stdio: ['ignore', 'pipe', 'pipe'] })
   let output = ''
   let spawnError: Error | undefined
@@ -125,7 +131,10 @@ export async function launch(editor: Editor, profile: boolean, logPath: string, 
     const findWorkbench = () => browser!.contexts()[0]?.pages().find(page => editor.id === 'theia' ? /\/frontend\/index\.html(?:\?|$)/.test(page.url()) : page.url() !== 'about:blank')
     while (!findWorkbench() && Date.now() < deadline) await delay(100)
     const page = findWorkbench()
-    if (!page) throw new Error('No workbench page')
+    if (!page) {
+      const pages = browser.contexts()[0]?.pages().map(candidate => candidate.url())
+      throw new Error(`No workbench page: ${JSON.stringify({ pages })}`)
+    }
     page.setDefaultTimeout(20000)
     await page.locator(editor.id === 'lvce' ? '[role=tree]' : '.monaco-workbench').first().waitFor()
     if (editor.id === 'theia') {
@@ -134,6 +143,10 @@ export async function launch(editor: Editor, profile: boolean, logPath: string, 
       await untrusted.waitFor({ state: 'visible' })
       await untrusted.click()
       await page.locator('#theia-dialog-shell.workspace-trust-dialog').waitFor({ state: 'hidden' })
+    }
+    if (editor.id === 'cursor') {
+      const welcome = page.getByRole('heading', { name: /welcome to cursor|cursor setup/i })
+      if (await welcome.isVisible().catch(() => false)) throw new Error('Cursor welcome screen is visible despite seeded profile state')
     }
     await page.bringToFront()
     await page.evaluate(() => window.focus())

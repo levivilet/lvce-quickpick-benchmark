@@ -1,6 +1,6 @@
 # LVCE quickpick benchmark
 
-Compare desktop LVCE Editor, VS Code, and Eclipse Theia file quickpick opening,
+Compare desktop LVCE Editor, VS Code, Cursor, and Eclipse Theia file quickpick opening,
 incremental filtering, renderer-only and frontend/backend sampled JavaScript activity,
 renderer traffic, CSS style recalculation and paint work. Results from `main` are published at
 https://levivilet.github.io/lvce-quickpick-benchmark/.
@@ -22,21 +22,23 @@ npm run report
 # Serve site/ with any static HTTP server.
 ```
 
-Use `--editor lvce`, `--editor vscode`, or `--editor theia` and `--mode latency`,
-`--mode profile`, `--mode traffic` or `--mode render`
+Use `--editor lvce`, `--editor vscode`, `--editor cursor`, or `--editor theia` and `--mode latency`,
+`--mode profile`, `--mode traffic`, `--mode render` or `--mode paint`
 for focused diagnosis. These options overwrite `results/results.json` with that run.
-Without them, every repetition measures all three editors, both filenames, and all four modes.
+Without them, every repetition measures all four editors, both filenames, and all five modes.
 Raw JSON, Chromium `.cpuprofile` and rendering trace files, screenshots and application
 logs are retained in `results/`. `site/raw/` publishes these files alongside the charts.
 
 ## Protocol
 
 Each trial launches the same source fixture in a fresh profile, with separate
-Chromium user data and XDG config/data/cache/state directories. The actual home
-directory is preserved. The editor process tree is stopped and its profile removed
+Chromium user data and XDG config/data/cache/state directories. Cursor gets a
+temporary `HOME` too; other editors keep the actual home directory. The editor process tree is stopped and its profile removed
 on completion, launch failure, timeout or editor crash. Runs use Xvfb; they do not
 control an existing desktop editor. Third-party extensions, updates and telemetry are
-disabled where the editor supports those launch/settings options.
+disabled where the editor supports those launch/settings options. Cursor is pinned
+to 3.22.12; each fresh profile is initialized outside the measurement, then its
+version-specific SQLite welcome state is seeded before the fixture launch.
 
 The fixed queries are `quickOpenModel.ts` and `editorOptions.ts`. Each trial performs
 one warmup of the same complete query, closes quickpick, waits for initialized worker
@@ -102,8 +104,8 @@ executable for the browser regression tests. Desktop benchmark binaries remain p
 Tests cover stale highlights with unchanged filenames, timeout/page-close behavior,
 launch cleanup, profile and trace accounting, report output, and renderer-traffic
 coverage. Every PR must pass `Check` and
-`Desktop benchmark (all three editors)`; the latter runs real desktop latency, profiling,
-traffic and rendering trials for both queries and all three editors. Main runs five repetitions and deploys Pages
+`Desktop benchmark (all four editors)`; the latter runs real desktop latency, profiling,
+traffic, rendering and paint trials for both queries and all four editors. Main runs five repetitions and deploys Pages
 only after successful benchmarking. Dependencies are cached by OS, architecture,
 Node version file and lockfile. Editor archives are checksum-verified even on cache hits.
 
@@ -115,7 +117,7 @@ coverage. Do not accept a new adapter based only on mocked DOM tests.
 
 The separate `--mode traffic` pass measures **incoming workbench messages** during
 opening and each character, using the same trusted-keydown to query-qualified
-visible-update boundary. The standard run includes all four measurement passes. No instrumentation
+visible-update boundary. The standard run includes all five measurement passes. No instrumentation
 is added to the latency or profile passes. Raw `traffic.samples` retain the query,
 window timestamps, counts and logical bytes by transport; `traffic.worlds` records
 context identities, discovered port/worker counts and each world's original windows.
