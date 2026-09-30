@@ -17,6 +17,11 @@ export function summarize(profile: CpuProfile) {
   }
   return { javascriptMs: activeUs / 1000, idleMs: idleUs / 1000, vmMs: vmUs / 1000, samples: profile.samples.length, durationMs: (profile.endTime - profile.startTime) / 1000 }
 }
+export function rendererJavaScriptMs(results: { side: string; identity: { targetId?: string }; javascriptMs: number }[], applicationTargetId: string) {
+  const profiles = results.filter(result => result.side === 'frontend' && result.identity.targetId === applicationTargetId)
+  if (profiles.length !== 1) throw new Error(`Missing or duplicate application renderer profile coverage: ${applicationTargetId}`)
+  return profiles[0].javascriptMs
+}
 interface Session { send(method: string, params?: Record<string, unknown>): Promise<any> }
 export async function profileWorkload(app: Awaited<ReturnType<typeof launch>>, output: string, action: () => Promise<unknown>) {
   const root = await app.browser.newBrowserCDPSession()
@@ -26,8 +31,10 @@ export async function profileWorkload(app: Awaited<ReturnType<typeof launch>>, o
     // Initialize dedicated-worker targets before attaching their profilers.
     const pageSession = await app.page.context().newCDPSession(app.page)
     await pageSession.send('Target.setAutoAttach', { autoAttach: true, waitForDebuggerOnStart: false, flatten: true })
+    const { targetInfo: applicationTarget } = await pageSession.send('Target.getTargetInfo')
+    if (!applicationTarget?.targetId || applicationTarget.type !== 'page') throw new Error('Missing application page target')
     const targets = (await root.send('Target.getTargets')).targetInfos.filter(t => ['page', 'worker', 'shared_worker', 'service_worker', 'iframe'].includes(t.type))
-    if (!targets.some(t => t.type === 'page')) throw new Error('Missing frontend target')
+    if (!targets.some(t => t.targetId === applicationTarget.targetId && t.type === 'page')) throw new Error('Missing application page target coverage')
     const isolateIds = new Set<string>()
     for (const target of targets) {
       const { sessionId } = await root.send('Target.attachToTarget', { targetId: target.targetId, flatten: false })
@@ -71,7 +78,7 @@ export async function profileWorkload(app: Awaited<ReturnType<typeof launch>>, o
     const targetAfter = (await root.send('Target.getTargets')).targetInfos.filter(t => ['page', 'worker', 'shared_worker', 'service_worker', 'iframe'].includes(t.type))
     if (before.map(x => x.pid).sort().join() !== after.map(x => x.pid).sort().join() || targets.map(x => x.targetId).sort().join() !== targetAfter.map(x => x.targetId).sort().join()) throw new Error(`Profiler process/target membership changed during workload: ${JSON.stringify({before,after,targets,targetAfter})}`)
     await pageSession.detach()
-    return { actionResult, results, inaccessible, frontendMs: results.filter(x => x.side === 'frontend').reduce((sum, x) => sum + x.javascriptMs, 0), backendMs: results.filter(x => x.side === 'backend').reduce((sum, x) => sum + x.javascriptMs, 0) }
+    return { actionResult, results, inaccessible, rendererJavaScriptMs: rendererJavaScriptMs(results, applicationTarget.targetId), frontendMs: results.filter(x => x.side === 'frontend').reduce((sum, x) => sum + x.javascriptMs, 0), backendMs: results.filter(x => x.side === 'backend').reduce((sum, x) => sum + x.javascriptMs, 0) }
   } finally {
     await Promise.allSettled(sessions.map(x => x.owned?.close()))
     await root.detach().catch(() => {})

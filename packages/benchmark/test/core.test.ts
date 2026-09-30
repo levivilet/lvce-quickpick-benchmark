@@ -2,9 +2,10 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { chromium } from 'playwright'
 import { arm, collect, adapters } from '../src/adapters.ts'
-import { summarize } from '../src/profiles.ts'
+import { rendererJavaScriptMs, summarize } from '../src/profiles.ts'
 import { render, statistics } from '../../report/src/render.ts'
 import { launch } from '../src/launch.ts'
+import { summarizeRenderingTrace } from '../src/rendering.ts'
 import { readdir, mkdir, readFile, writeFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 
@@ -15,18 +16,74 @@ test('profile accounting excludes idle and VM samples and rejects incomplete dat
   assert.throws(() => summarize({ ...profile, samples: [99, 2, 3] }))
   assert.throws(() => summarize({ ...profile, samples: [], timeDeltas: [] }))
 })
+test('renderer JavaScript uses only the application page profile and requires its coverage', () => {
+  const results = [
+    { side: 'frontend', identity: { targetId: 'application-page', type: 'page' }, javascriptMs: 3 },
+    { side: 'frontend', identity: { targetId: 'worker', type: 'worker' }, javascriptMs: 100 },
+    { side: 'frontend', identity: { targetId: 'iframe', type: 'iframe' }, javascriptMs: 200 },
+    { side: 'backend', identity: { targetId: 'application-page', role: 'main' }, javascriptMs: 300 },
+  ]
+  assert.equal(rendererJavaScriptMs(results, 'application-page'), 3)
+  assert.equal(rendererJavaScriptMs([{ ...results[0], javascriptMs: 0 }], 'application-page'), 0)
+  assert.throws(() => rendererJavaScriptMs(results.slice(1), 'application-page'), /coverage/)
+  assert.throws(() => rendererJavaScriptMs([results[0], results[0]], 'application-page'), /coverage/)
+})
 test('statistics and report preserve unavailable data and escape external labels', () => {
   assert.equal(statistics([4, 1, 2, 3]).median, 2.5)
   assert.equal(statistics([4, 1, 2, 3]).p95, 4)
   assert.throws(() => statistics([NaN]))
   const html = render({ created: 'today', editors: [{ id: 'lvce', name: '<script>x</script>', version: '1' }], trials: [], repeats: 1, fixture: { commit: 'abc' } })
   assert(html.includes('Unavailable'))
+  assert(html.includes('Renderer JavaScript'))
+  assert(html.includes('application page isolate'))
   assert(!html.includes('<script>x</script>'))
   assert(html.includes('&lt;script&gt;'))
   assert(html.includes('raw/results.json'))
   const threeEditors = render({ created: 'today', editors: [{ id: 'lvce', name: 'LVCE Editor', version: '1' }, { id: 'vscode', name: 'VS Code', version: '1' }, { id: 'theia', name: 'Eclipse Theia IDE', version: '1' }], trials: [], repeats: 1, fixture: { commit: 'abc' } })
   assert(threeEditors.includes('LVCE Editor × VS Code × Eclipse Theia'))
   assert(threeEditors.includes('viewBox="0 0 640 235"'))
+})
+test('report renders zero renderer activity and keeps missing renderer data unavailable', () => {
+  const base = { created: 'today', editors: [{ id: 'lvce', name: 'LVCE', version: '1' }], repeats: 1, fixture: { commit: 'abc' } }
+  const trials = (rendererJavaScriptMs?: number) => [
+    { editor: 'lvce', mode: 'latency', status: 'passed', repeat: 0, samples: [{ milliseconds: 0 }, { milliseconds: 0 }] },
+    { editor: 'lvce', mode: 'profile', status: 'passed', repeat: 0, profile: { rendererJavaScriptMs, frontendMs: 0, backendMs: 0 } },
+  ]
+  const html = render({ ...base, trials: trials(0) })
+  assert(html.includes('0.00 ms'))
+  const unavailable = render({ ...base, trials: trials() })
+  assert(unavailable.includes('Renderer JavaScript'))
+  assert(unavailable.includes('Unavailable'))
+})
+test('rendering metrics use only complete main-frame events and convert trace microseconds', () => {
+  const trace = { traceEvents: [
+    { name: 'UpdateLayoutTree', ph: 'X', ts: 10, dur: 1250, args: { data: { frame: 'main' } } },
+    { name: 'UpdateLayoutTree', ph: 'X', ts: 20, dur: 750, args: { beginData: { frame: 'main' } } },
+    { name: 'Paint', ph: 'X', ts: 30, dur: 500, args: { data: { frame: 'main' } } },
+    { name: 'Paint', ph: 'X', ts: 40, dur: 9000, args: { data: { frame: 'other' } } },
+    { name: 'Paint', ph: 'B', ts: 50, dur: 1000, args: { data: { frame: 'main' } } },
+  ] }
+  assert.deepEqual(summarizeRenderingTrace(trace, 'main'), { styleRecalculationCount: 2, styleRecalculationMs: 2, paintEventCount: 1, paintMs: 0.5 })
+  assert.deepEqual(summarizeRenderingTrace({ traceEvents: [
+    { name: 'UpdateLayoutTree', ph: 'X', ts: 1, dur: 0, args: { data: { frame: 'main' } } },
+    { name: 'Paint', ph: 'X', ts: 2, dur: 0, args: { data: { frame: 'main' } } },
+  ] }, 'main'), { styleRecalculationCount: 1, styleRecalculationMs: 0, paintEventCount: 1, paintMs: 0 })
+  assert.throws(() => summarizeRenderingTrace({ traceEvents: [] }, 'main'), /No main-frame style recalculation/)
+  assert.throws(() => summarizeRenderingTrace({ traceEvents: [
+    { name: 'RecalculateStyles', ph: 'X', ts: 1, dur: 1, args: { beginData: { frame: 'main' } } },
+    { name: 'Paint', ph: 'X', ts: 2, dur: 1, args: { data: { frame: 'main' } } },
+  ] }, 'main'), /No main-frame style recalculation/)
+  assert.throws(() => summarizeRenderingTrace({ traceEvents: [{ name: 'UpdateLayoutTree', ph: 'X', ts: 1, dur: 1, args: { data: { frame: 'other' } } }] }, 'main'), /No main-frame style recalculation/)
+})
+test('render report shows rendering units, unavailable states, and raw trace links', () => {
+  const html = render({ created: 'today', editors: [{ id: 'lvce', name: 'LVCE', version: '1' }, { id: 'vscode', name: 'VS Code', version: '2' }], trials: [
+    { editor: 'lvce', mode: 'render', status: 'passed', rendering: { styleRecalculationMs: 2, styleRecalculationCount: 3, paintMs: 1, paintEventCount: 4, trace: 'lvce.trace.json' } },
+  ], repeats: 1, fixture: { commit: 'abc' } })
+  assert(html.includes('CSS style recalculation'))
+  assert(html.includes('Paint work'))
+  assert(html.includes('main-frame ms'))
+  assert(html.includes('raw/lvce.trace.json'))
+  assert(html.includes('Unavailable'))
 })
 test('current highlights distinguish unchanged filenames from stale results; timeout and page crash reject', async () => {
   const browser = await chromium.launch({ executablePath: process.env.CHROME_BIN })
