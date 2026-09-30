@@ -3,6 +3,7 @@ export interface Selectors { input: string; row: string; label: string; highligh
 export const adapters: Record<string, Selectors> = {
   lvce: { input: 'input[name="QuickPickInput"]', row: '.QuickPickItem', label: '.QuickPickItemLabel', highlight: '.QuickPickHighlight', busy: '[role=progressbar], [aria-busy=true]' },
   vscode: { input: '.quick-input-widget input', row: '.quick-input-list .monaco-list-row', label: '.label-name', highlight: '.label-name .highlight', busy: '.quick-input-widget .monaco-progress-container.active' },
+  theia: { input: '.quick-input-widget input', row: '.quick-input-list .monaco-list-row', label: '.label-name', highlight: '.label-name .highlight', busy: '.quick-input-widget .monaco-progress-container.active' },
 }
 // Runs wholly in the renderer: trusted keydown to query-qualified DOM + two frames.
 // The query is checked again on each frame, so stale/unchanged filenames cannot end a sample.
@@ -15,7 +16,12 @@ export async function arm(page: Page, selectors: Selectors, query: string, timeo
       let done = false
       let consecutive = 0
       const clean = () => { done = true; clearTimeout(timer); cancelAnimationFrame(frame); document.removeEventListener('keydown', keydown, true) }
-      const timer = setTimeout(() => { clean(); reject(new Error(`Quickpick update timeout: ${query}`)) }, timeoutMs)
+      const timer = setTimeout(() => {
+        const input = document.querySelector<HTMLInputElement>(selectors.input)
+        const state = { started: started !== undefined, value: input?.value, visible: Boolean(input?.getClientRects().length), focused: document.activeElement === input, rows: document.querySelectorAll(selectors.row).length, busy: [...document.querySelectorAll(selectors.busy)].some(el => Boolean(el.getClientRects().length)) }
+        clean()
+        reject(new Error(`Quickpick update timeout: ${query} (${JSON.stringify(state)})`))
+      }, timeoutMs)
       const keydown = (event: KeyboardEvent) => {
         if (!event.isTrusted || event.key === 'Control') return
         if (started === undefined) {
@@ -53,8 +59,18 @@ export interface Sample { query: string; milliseconds: number; rows: { label: st
 export const collect = (page: Page): Promise<Sample> => page.evaluate(() => (window as any).quickpickSample)
 export async function search(page: Page, editor: string, filename: string): Promise<Sample[]> {
   const selectors = adapters[editor]
+  const input = page.locator(selectors.input)
+  if (await input.isVisible()) {
+    await page.keyboard.press('Escape')
+    await input.waitFor({ state: 'hidden' })
+  }
+  if (editor === 'theia') {
+    await page.bringToFront()
+    await page.locator('.theia-ApplicationShell').click({ position: { x: 20, y: 20 } })
+  }
   await arm(page, selectors, '')
   await page.keyboard.press('Control+p')
+  await input.waitFor({ state: 'visible' })
   const samples = [await collect(page)]
   for (let index = 0; index < filename.length; index++) {
     await arm(page, selectors, filename.slice(0, index + 1))

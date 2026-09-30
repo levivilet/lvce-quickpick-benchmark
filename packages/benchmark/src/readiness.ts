@@ -12,7 +12,8 @@ export async function settleTargets(browser: Browser, editor: string) {
       const targets = targetInfos.filter(x => ['page', 'worker', 'shared_worker', 'service_worker', 'iframe'].includes(x.type))
       const signature = targets.map(x => x.targetId).sort().join()
       if (signature !== previous) { previous = signature; since = performance.now() }
-      const ready = editor !== 'vscode' || ['TextMateWorker', 'editorWorkerService'].every(title => targets.some(x => x.title === title))
+      const required = editor === 'vscode' ? ['TextMateWorker', 'editorWorkerService'] : editor === 'theia' ? ['editorWorkerService'] : []
+      const ready = required.every(title => targets.some(x => x.title === title))
       if (ready && performance.now() - since >= 500) return { milliseconds: performance.now() - start, targets }
       await delay(100)
     }
