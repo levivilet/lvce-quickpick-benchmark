@@ -6,6 +6,7 @@ import { rendererJavaScriptMs, summarize } from '../src/profiles.ts'
 import { render, statistics } from '../../report/src/render.ts'
 import { launch } from '../src/launch.ts'
 import { summarizeRenderingTrace } from '../src/rendering.ts'
+import { collectPaintMetrics } from '../src/paintMetrics.ts'
 import { readdir, mkdir, readFile, writeFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 
@@ -84,6 +85,77 @@ test('render report shows rendering units, unavailable states, and raw trace lin
   assert(html.includes('main-frame ms'))
   assert(html.includes('raw/lvce.trace.json'))
   assert(html.includes('Unavailable'))
+})
+test('paint metrics sum exact commands across content layers and release every snapshot', async () => {
+  const released: string[] = []
+  const handlers = new Map<string, (event: any) => void>()
+  const cdp = {
+    on: (name: string, handler: (event: any) => void) => handlers.set(name, handler),
+    off: (name: string) => handlers.delete(name),
+    detach: async () => {},
+    send: async (method: string, params?: any) => {
+      if (method === 'LayerTree.enable') handlers.get('LayerTree.layerTreeDidChange')?.({ layers: [
+        { layerId: 'one', drawsContent: true }, { layerId: 'empty', drawsContent: false }, { layerId: 'two', drawsContent: true },
+      ] })
+      if (method === 'LayerTree.makeSnapshot') return { snapshotId: `snapshot-${params.layerId}` }
+      if (method === 'LayerTree.snapshotCommandLog') return { commandLog: params.snapshotId.endsWith('one') ? [{ method: 'drawTextBlob' }, { method: 'clipRect' }] : [{ method: 'drawTextBlob' }, { method: 'drawTextBlob' }] }
+      if (method === 'LayerTree.releaseSnapshot') released.push(params.snapshotId)
+      return {}
+    },
+  }
+  const page = { context: () => ({ newCDPSession: async () => cdp }) } as any
+  assert.deepEqual(await collectPaintMetrics(page), { available: true, contentLayerCount: 2, commands: [{ method: 'drawTextBlob', count: 3 }, { method: 'clipRect', count: 1 }] })
+  assert.deepEqual(released.sort(), ['snapshot-one', 'snapshot-two'])
+  assert.equal(handlers.size, 0)
+})
+test('paint metrics release earlier snapshots when a later layer fails', async () => {
+  const released: string[] = []
+  const handlers = new Map<string, (event: any) => void>()
+  const cdp = {
+    on: (name: string, handler: (event: any) => void) => handlers.set(name, handler),
+    off: (name: string) => handlers.delete(name),
+    detach: async () => {},
+    send: async (method: string, params?: any) => {
+      if (method === 'LayerTree.enable') handlers.get('LayerTree.layerTreeDidChange')?.({ layers: [{ layerId: 'one', drawsContent: true }, { layerId: 'two', drawsContent: true }] })
+      if (method === 'LayerTree.makeSnapshot' && params.layerId === 'two') throw new Error('snapshot unavailable')
+      if (method === 'LayerTree.makeSnapshot') return { snapshotId: 'snapshot-one' }
+      if (method === 'LayerTree.snapshotCommandLog') return { commandLog: [] }
+      if (method === 'LayerTree.releaseSnapshot') released.push(params.snapshotId)
+      return {}
+    },
+  }
+  const page = { context: () => ({ newCDPSession: async () => cdp }) } as any
+  assert.deepEqual(await collectPaintMetrics(page), { available: false, reason: 'snapshot unavailable' })
+  assert.deepEqual(released, ['snapshot-one'])
+  assert.equal(handlers.size, 0)
+})
+test('paint snapshots with no content layers are unavailable', async () => {
+  const handlers = new Map<string, (event: any) => void>()
+  const cdp = {
+    on: (name: string, handler: (event: any) => void) => handlers.set(name, handler),
+    off: (name: string) => handlers.delete(name),
+    detach: async () => {},
+    send: async (method: string) => {
+      if (method === 'LayerTree.enable') handlers.get('LayerTree.layerTreeDidChange')?.({ layers: [{ layerId: 'empty', drawsContent: false }] })
+      return {}
+    },
+  }
+  const page = { context: () => ({ newCDPSession: async () => cdp }) } as any
+  assert.deepEqual(await collectPaintMetrics(page), { available: false, reason: 'No content layers in final snapshot' })
+})
+test('paint report averages available trials, fills missing methods with zero, and excludes failures', () => {
+  const html = render({ created: 'today', editors: [{ id: 'lvce', name: '<script>LVCE</script>', version: '1' }, { id: 'other', name: 'Other', version: '2' }], repeats: 2, fixture: { commit: 'abc' }, trials: [
+    { editor: 'lvce', mode: 'paint', status: 'passed', paintMetrics: { available: true, commands: [{ method: 'drawTextBlob', count: 5 }, { method: 'draw<Rect>', count: 1 }] } },
+    { editor: 'lvce', mode: 'paint', status: 'passed', paintMetrics: { available: true, commands: [{ method: 'drawTextBlob', count: 0 }] } },
+    { editor: 'lvce', mode: 'paint', status: 'failed', paintMetrics: { available: true, commands: [{ method: 'drawTextBlob', count: 99 }] } },
+    { editor: 'other', mode: 'paint', status: 'passed', paintMetrics: { available: false, reason: 'No layers' } },
+  ] })
+  assert(html.includes('Paint command breakdown'))
+  assert(html.includes('drawTextBlob</code></td><td>2.50</td><td>0</td><td>5</td>'))
+  assert(html.includes('draw&lt;Rect&gt;'))
+  assert(!html.includes('99'))
+  assert(html.includes('Unavailable: no valid final content-layer snapshots'))
+  assert(!html.includes('<script>LVCE</script>'))
 })
 test('current highlights distinguish unchanged filenames from stale results; timeout and page crash reject', async () => {
   const browser = await chromium.launch({ executablePath: process.env.CHROME_BIN })
