@@ -3,19 +3,23 @@ import { Protocol } from './protocol.ts'
 import { TargetSession } from './target-session.ts'
 import type { launch } from './launch.ts'
 export interface CpuProfile { nodes: { id: number; callFrame: { functionName: string; url: string } }[]; samples: number[]; timeDeltas: number[]; startTime: number; endTime: number }
+const maxNegativeSampleDeltaUs = 1000
 export function summarize(profile: CpuProfile) {
   if (!profile.samples?.length || profile.samples.length !== profile.timeDeltas?.length) throw new Error('Missing or inconsistent CPU samples')
   const nodes = new Map(profile.nodes.map(node => [node.id, node.callFrame]))
-  let activeUs = 0, idleUs = 0, vmUs = 0
+  let activeUs = 0, idleUs = 0, vmUs = 0, discardedSamples = 0
   for (let index = 0; index < profile.samples.length; index++) {
     const frame = nodes.get(profile.samples[index])
     const delta = profile.timeDeltas[index]
-    if (!frame || !Number.isFinite(delta) || delta < 0) throw new Error('Invalid CPU sample')
+    if (!frame || !Number.isFinite(delta) || delta < -maxNegativeSampleDeltaUs) throw new Error('Invalid CPU sample')
+    // Chromium can report a tiny negative interval when its sampling clock moves backwards.
+    // Exclude that sample from totals instead of letting it subtract time or fail the trial.
+    if (delta < 0) { discardedSamples++; continue }
     if (frame.functionName === '(idle)') idleUs += delta
     else if (['(program)', '(garbage collector)', '(root)'].includes(frame.functionName)) vmUs += delta
     else activeUs += delta
   }
-  return { javascriptMs: activeUs / 1000, idleMs: idleUs / 1000, vmMs: vmUs / 1000, samples: profile.samples.length, durationMs: (profile.endTime - profile.startTime) / 1000 }
+  return { javascriptMs: activeUs / 1000, idleMs: idleUs / 1000, vmMs: vmUs / 1000, samples: profile.samples.length - discardedSamples, discardedSamples, durationMs: (profile.endTime - profile.startTime) / 1000 }
 }
 export function rendererJavaScriptMs(results: { side: string; identity: { targetId?: string }; javascriptMs: number }[], applicationTargetId: string) {
   const profiles = results.filter(result => result.side === 'frontend' && result.identity.targetId === applicationTargetId)
@@ -62,8 +66,9 @@ export async function profileWorkload(app: Awaited<ReturnType<typeof launch>>, o
         sessions.push({ session, side: 'backend', identity: { role: record.kind === 'fork' ? 'child-process' : 'utility', ...result.value, file: record.file }, owned: session })
       } catch (error) { session?.close(); inaccessible.push(String(error)) }
     }
-    if (!before.length || before.some(x => !attachedPids.has(x.pid))) throw new Error(`Missing live utility inspector coverage: ${JSON.stringify({ before, attachedPids: [...attachedPids], inaccessible })}`)
-    if (!sessions.some(x => x.identity.type === 'worker') && ['lvce', 'theia'].includes(app.editorId)) throw new Error('Missing frontend worker coverage')
+    const uncovered = before.filter(x => !attachedPids.has(x.pid))
+    if ((app.profileCapabilities.requireBackendProcess && !before.length) || uncovered.length) throw new Error(`Missing live backend inspector coverage: ${JSON.stringify({ before, attachedPids: [...attachedPids], inaccessible, uncovered })}`)
+    if (app.profileCapabilities.requireRendererWorker && !sessions.some(x => x.identity.type === 'worker')) throw new Error('Missing frontend worker coverage')
     for (const { session } of sessions) { await session.send('Profiler.enable'); await session.send('Profiler.setSamplingInterval', { interval: 1000 }) }
     for (const { session } of sessions) await session.send('Profiler.start')
     actionResult = await action()

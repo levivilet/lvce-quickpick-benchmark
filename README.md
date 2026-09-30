@@ -1,6 +1,6 @@
 # LVCE quickpick benchmark
 
-Compare desktop LVCE Editor, VS Code, Cursor, and Eclipse Theia file quickpick opening,
+Compare desktop LVCE Editor, VS Code, Cursor, Eclipse Theia, and Atom (archived) file quickpick opening,
 incremental filtering, renderer-only and frontend/backend sampled JavaScript activity,
 renderer traffic, CSS style recalculation and paint work. Results from `main` are published at
 https://levivilet.github.io/lvce-quickpick-benchmark/.
@@ -9,7 +9,8 @@ https://levivilet.github.io/lvce-quickpick-benchmark/.
 
 Linux x64, Node 24.15+, Git, `tar`, `dpkg-deb`, `ripgrep` (`rg`), and Electron system libraries are required.
 The editor binaries are pinned with SHA256 checksums in `config/editors.lock.json`.
-Theia's official Linux AppImage is extracted during setup, so FUSE is not required.
+Theia's official Linux AppImage is extracted during setup, so FUSE is not required. Atom 1.60.0
+is pinned from its archived Debian release.
 The benchmark workspace is the **VS Code source tree at tag 1.39.0**, commit
 `9df03c6d6ce97c6645c5846f6dfa2a6a7d276515`; this is distinct from the VS Code executable version.
 Setup downloads approximately 900 MB. No fixture dependencies are installed or executed.
@@ -22,10 +23,11 @@ npm run report
 # Serve site/ with any static HTTP server.
 ```
 
-Use `--editor lvce`, `--editor vscode`, `--editor cursor`, or `--editor theia` and `--mode latency`,
+Use `--editor lvce`, `--editor vscode`, `--editor cursor`, `--editor theia`, or `--editor atom` and `--mode latency`,
 `--mode profile`, `--mode traffic`, `--mode render` or `--mode paint`
 for focused diagnosis. These options overwrite `results/results.json` with that run.
-Without them, every repetition measures all four editors, both filenames, and all five modes.
+Without them, every repetition measures all five editors and both filenames. Atom supports the
+latency and profile modes; the other editors retain all five measurement modes.
 Raw JSON, Chromium `.cpuprofile` and rendering trace files, screenshots and application
 logs are retained in `results/`. `site/raw/` publishes these files alongside the charts.
 
@@ -36,7 +38,10 @@ Chromium user data and XDG config/data/cache/state directories. Cursor gets a
 temporary `HOME` too; other editors keep the actual home directory. The editor process tree is stopped and its profile removed
 on completion, launch failure, timeout or editor crash. Runs use Xvfb; they do not
 control an existing desktop editor. Third-party extensions, updates and telemetry are
-disabled where the editor supports those launch/settings options. Cursor is pinned
+disabled where the editor supports those launch/settings options. Atom receives a private
+`HOME`, `ATOM_HOME`, XDG directories, and Chromium profile. Its Electron 9 CDP connection is
+adapted for Playwright's unsupported download-behavior preference; the benchmark does not download
+from the editor. Cursor is pinned
 to 3.22.12; each fresh profile is initialized outside the measurement, then its
 version-specific SQLite welcome state is seeded before the fixture launch.
 
@@ -67,7 +72,9 @@ Profiling runs separately, using the same search, with V8 sampling at 1 ms:
   application page isolate per search. Iframe and worker isolates are excluded from
   this measure and remain included in the broader frontend total and raw profiles.
 - Backend: Electron main plus every live utility created by `utilityProcess.fork`.
-  Theia's forked backend process is instrumented and profiled as well.
+  Theia's forked backend process is instrumented and profiled as well. Atom uses its legacy
+  `child_process.fork` instrumentation when present; its profile requires the main process and
+  application renderer but does not assume a utility process exists.
   The harness pauses the original main entrypoint using the Node inspector, wraps
   `fork` to add `--inspect=0`, resumes execution, and discovers each inspector from
   stderr. It retains module path, PID, argv, raw profile, interval and sample count.
@@ -80,7 +87,10 @@ Each sample's microsecond delta is attributed to its sampled frame. `(idle)` is
 separate from `(program)`, garbage collection and other VM pseudo frames. Remaining
 samples are reported as estimated JavaScript milliseconds. Missing profiles or
 changed target/process membership invalidate the trial, never produce a synthetic
-zero. A valid profile with only idle samples can legitimately report zero JS time.
+zero. Chromium samples with a negative delta of at most 1 ms are excluded from the
+totals and counted as `discardedSamples` in raw results; larger clock anomalies
+invalidate the trial. A valid profile with only idle samples can legitimately
+report zero JS time.
 The raw profiles retain each profiler's exact window; sequential starts/stops and
 controller gaps add overhead. Instrumentation is not overhead-corrected. Profiling
 numbers must not be substituted for the separate latency pass.
@@ -104,8 +114,9 @@ executable for the browser regression tests. Desktop benchmark binaries remain p
 Tests cover stale highlights with unchanged filenames, timeout/page-close behavior,
 launch cleanup, profile and trace accounting, report output, and renderer-traffic
 coverage. Every PR must pass `Check` and
-`Desktop benchmark (all four editors)`; the latter runs real desktop latency, profiling,
-traffic, rendering and paint trials for both queries and all four editors. Main runs five repetitions and deploys Pages
+`Desktop benchmark (all five editors)`; the latter runs real desktop latency and profiling for
+both queries on Atom, plus latency, profiling, traffic, rendering and paint trials for the other
+four editors. Main runs five repetitions and deploys Pages
 only after successful benchmarking. Dependencies are cached by OS, architecture,
 Node version file and lockfile. Editor archives are checksum-verified even on cache hits.
 
@@ -117,7 +128,8 @@ coverage. Do not accept a new adapter based only on mocked DOM tests.
 
 The separate `--mode traffic` pass measures **incoming workbench messages** during
 opening and each character, using the same trusted-keydown to query-qualified
-visible-update boundary. The standard run includes all five measurement passes. No instrumentation
+visible-update boundary. The standard run includes all five measurement passes for editors that
+support those capabilities; Atom runs latency and profiling only. No instrumentation
 is added to the latency or profile passes. Raw `traffic.samples` retain the query,
 window timestamps, counts and logical bytes by transport; `traffic.worlds` records
 context identities, discovered port/worker counts and each world's original windows.

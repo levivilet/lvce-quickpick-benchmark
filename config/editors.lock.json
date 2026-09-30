@@ -34,5 +34,14 @@
     "url": "https://download.eclipse.org/theia/ide/1.75.0/linux/TheiaIDE.AppImage",
     "sha256": "f1eb94544230f1b44c124d40a1e437ef6c81ae91c62e37b11f4f9d168a8d7358",
     "binary": "squashfs-root/theia-ide-electron-app.bin"
+  },
+  {
+    "id": "atom",
+    "name": "Atom (archived)",
+    "version": "1.60.0",
+    "archive": "atom-amd64.deb",
+    "url": "https://github.com/atom/atom/releases/download/v1.60.0/atom-amd64.deb",
+    "sha256": "5c7c0259062b9d4911d2537bfceaff5316f9de111698840a90d7cd497df891a6",
+    "binary": "usr/share/atom/atom"
   }
 ]

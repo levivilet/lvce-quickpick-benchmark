@@ -1,10 +1,11 @@
 import type { Page } from 'playwright'
-export interface Selectors { input: string; row: string; label: string; highlight: string; busy: string }
+export interface Selectors { input: string; row: string; label: string; highlight: string; busy: string; text?: string }
 export const adapters: Record<string, Selectors> = {
   lvce: { input: 'input[name="QuickPickInput"]', row: '.QuickPickItem', label: '.QuickPickItemLabel', highlight: '.QuickPickHighlight', busy: '[role=progressbar], [aria-busy=true]' },
   vscode: { input: '.quick-input-widget input', row: '.quick-input-list .monaco-list-row', label: '.label-name', highlight: '.label-name .highlight', busy: '.quick-input-widget .monaco-progress-container.active' },
   cursor: { input: '.quick-input-widget input[type="text"]', row: '.quick-input-list .monaco-list-row', label: '.label-name', highlight: '.label-name .highlight', busy: '.quick-input-widget .monaco-progress-container.active' },
   theia: { input: '.quick-input-widget input', row: '.quick-input-list .monaco-list-row', label: '.label-name', highlight: '.label-name .highlight', busy: '.quick-input-widget .monaco-progress-container.active' },
+  atom: { input: '.fuzzy-finder atom-text-editor .hidden-input', row: '.fuzzy-finder .FuzzyFinderResult', label: '.primary-line', highlight: '.primary-line .character-match', busy: '.fuzzy-finder .loading', text: '.fuzzy-finder atom-text-editor .line' },
 }
 // Runs wholly in the renderer: trusted keydown to query-qualified DOM + two frames.
 // The query is checked again on each frame, so stale/unchanged filenames cannot end a sample.
@@ -19,7 +20,8 @@ export async function arm(page: Page, selectors: Selectors, query: string, timeo
       const clean = () => { done = true; clearTimeout(timer); cancelAnimationFrame(frame); document.removeEventListener('keydown', keydown, true) }
       const timer = setTimeout(() => {
         const input = document.querySelector<HTMLInputElement>(selectors.input)
-        const state = { started: started !== undefined, value: input?.value, visible: Boolean(input?.getClientRects().length), focused: document.activeElement === input, rows: document.querySelectorAll(selectors.row).length, busy: [...document.querySelectorAll(selectors.busy)].some(el => Boolean(el.getClientRects().length)) }
+        const value = selectors.text ? document.querySelector(selectors.text)?.textContent?.trimEnd() : input?.value
+        const state = { started: started !== undefined, value, visible: Boolean(input?.getClientRects().length), focused: document.activeElement === input, rows: document.querySelectorAll(selectors.row).length, busy: [...document.querySelectorAll(selectors.busy)].some(el => Boolean(el.getClientRects().length)) }
         clean()
         reject(new Error(`Quickpick update timeout: ${query} (${JSON.stringify(state)})`))
       }, timeoutMs)
@@ -39,7 +41,8 @@ export async function arm(page: Page, selectors: Selectors, query: string, timeo
         const rows = [...document.querySelectorAll(selectors.row)].filter(visible)
         const busy = [...document.querySelectorAll(selectors.busy)].some(visible)
         const matched = rows.some(row => [...row.querySelectorAll(selectors.highlight)].map(x => x.textContent).join('').toLowerCase() === query.toLowerCase())
-        const ready = started !== undefined && input && visible(input) && document.activeElement === input && input.value === query && !busy && (query === '' || matched)
+        const value = selectors.text ? document.querySelector(selectors.text)?.textContent?.trimEnd() : input?.value
+        const ready = started !== undefined && input && visible(input) && document.activeElement === input && value === query && !busy && (query === '' || matched)
         consecutive = ready ? consecutive + 1 : 0
         if (consecutive >= 2) {
           const traffic = (window as any).__quickpickTraffic

@@ -5,7 +5,9 @@ import { arm, collect, adapters } from '../src/adapters.ts'
 import { rendererJavaScriptMs, summarize } from '../src/profiles.ts'
 import { cursorWelcomeValues, prepareCursorProfile, seedCursorWelcomeState } from '../src/cursor-profile.ts'
 import { render, statistics } from '../../report/src/render.ts'
-import { launch } from '../src/launch.ts'
+import { launch, profileCapabilities, utilityInstrumentation } from '../src/launch.ts'
+import { createLegacyCdpProxy } from '../src/cdp-compat.ts'
+import { WebSocket, WebSocketServer } from 'ws'
 import { summarizeRenderingTrace } from '../src/rendering.ts'
 import { collectPaintMetrics } from '../src/paintMetrics.ts'
 import { readdir, mkdir, mkdtemp, readFile, writeFile, rm } from 'node:fs/promises'
@@ -15,7 +17,9 @@ import { spawn } from 'node:child_process'
 
 const profile = { startTime: 0, endTime: 6000, nodes: [{ id: 1, callFrame: { functionName: 'filter', url: 'app.js' } }, { id: 2, callFrame: { functionName: '(idle)', url: '' } }, { id: 3, callFrame: { functionName: '(garbage collector)', url: '' } }], samples: [1, 2, 3], timeDeltas: [1000, 2000, 3000] }
 test('profile accounting excludes idle and VM samples and rejects incomplete data', () => {
-  assert.deepEqual(summarize(profile), { javascriptMs: 1, idleMs: 2, vmMs: 3, samples: 3, durationMs: 6 })
+  assert.deepEqual(summarize(profile), { javascriptMs: 1, idleMs: 2, vmMs: 3, samples: 3, discardedSamples: 0, durationMs: 6 })
+  assert.deepEqual(summarize({ ...profile, timeDeltas: [1000, -2, 3000] }), { javascriptMs: 1, idleMs: 0, vmMs: 3, samples: 2, discardedSamples: 1, durationMs: 6 })
+  assert.throws(() => summarize({ ...profile, timeDeltas: [1000, -1001, 3000] }), /Invalid CPU sample/)
   assert.throws(() => summarize({ ...profile, timeDeltas: [] }))
   assert.throws(() => summarize({ ...profile, samples: [99, 2, 3] }))
   assert.throws(() => summarize({ ...profile, samples: [], timeDeltas: [] }))
@@ -47,6 +51,10 @@ test('statistics and report preserve unavailable data and escape external labels
   assert(fourEditors.includes('LVCE Editor × VS Code × Cursor × Eclipse Theia'))
   assert(fourEditors.includes('viewBox="0 0 640 300"'))
   assert(fourEditors.includes('Cursor 3.22.12'))
+  const fiveEditors = render({ created: 'today', editors: [{ id: 'lvce', name: 'LVCE Editor', version: '1' }, { id: 'vscode', name: 'VS Code', version: '1' }, { id: 'cursor', name: 'Cursor', version: '3.22.12' }, { id: 'theia', name: 'Eclipse Theia IDE', version: '1' }, { id: 'atom', name: 'Atom (archived)', version: '1.60.0' }], trials: [], repeats: 1, fixture: { commit: 'abc' } })
+  assert(fiveEditors.includes('LVCE Editor × VS Code × Cursor × Eclipse Theia IDE × Atom (archived)'))
+  assert(fiveEditors.includes('viewBox="0 0 640 365"'))
+  assert(fiveEditors.includes('Atom (archived) 1.60.0'))
 })
 test('Cursor welcome state is seeded repeat-safely without replacing unrelated profile state', async () => {
   const root = await mkdtemp(`${tmpdir()}/quickpick-cursor-state-`)
@@ -260,6 +268,67 @@ test('Theia quick-open uses its query-qualified Monaco adapter', async () => {
     assert.equal(result.query, 't')
     assert.equal(result.rows[0].label, 'test.ts')
   } finally { await browser.close() }
+})
+test('Atom fuzzy finder uses mini-editor text and only filename highlight spans', async () => {
+  const browser = await chromium.launch({ executablePath: process.env.CHROME_BIN })
+  try {
+    const page = await browser.newPage()
+    await page.setContent('<div class="fuzzy-finder"><atom-text-editor><div class="line"></div><input class="hidden-input"></atom-text-editor><ol><li class="FuzzyFinderResult"><div class="primary-line"><span class="character-match"></span>uick.ts</div><div class="secondary-line"><span class="character-match">stale</span></div></li></ol></div>')
+    await page.evaluate(() => {
+      const input = document.querySelector<HTMLInputElement>('.hidden-input')!
+      input.focus()
+      document.addEventListener('keydown', event => {
+        if (event.key === 'q') {
+          document.querySelector('.line')!.innerHTML = '<span>q</span>'
+          document.querySelector('.primary-line .character-match')!.textContent = 'q'
+        }
+      })
+    })
+    await arm(page, adapters.atom, 'q')
+    await page.keyboard.press('q')
+    const result = await collect(page)
+    assert.equal(result.query, 'q')
+    assert.equal(result.rows[0].label, 'quick.ts')
+    assert.equal(result.rows[0].highlights, 'q')
+  } finally { await browser.close() }
+})
+test('Atom profile uses legacy fork instrumentation without assuming a utility process', () => {
+  assert.deepEqual(profileCapabilities.atom, { requireBackendProcess: false, requireRendererWorker: false, processApis: ['childProcessFork'], legacyRequire: true })
+  assert(utilityInstrumentation(profileCapabilities.atom).includes('child_process'))
+  assert(!profileCapabilities.atom.processApis.includes('utilityProcess'))
+})
+test('legacy CDP proxy absorbs only Playwright download behavior and forwards other commands', async () => {
+  const upstream = new WebSocketServer({ host: '127.0.0.1', port: 0 })
+  await new Promise<void>(resolve => upstream.once('listening', resolve))
+  const address = upstream.address()
+  assert(address && typeof address !== 'string')
+  const received: string[] = []
+  upstream.on('connection', socket => socket.on('message', data => {
+    const request = JSON.parse(data.toString())
+    received.push(request.method)
+    socket.send(JSON.stringify({ id: request.id, result: { product: 'Chrome/83' } }))
+  }))
+  const proxy = await createLegacyCdpProxy(`ws://127.0.0.1:${address.port}`)
+  const client = new WebSocket(proxy.endpoint)
+  try {
+    await new Promise<void>((resolve, reject) => { client.once('open', resolve); client.once('error', reject) })
+    const request = (id: number, method: string) => new Promise<any>((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error(`CDP response timeout: ${method}`)), 2000)
+      const onMessage = (data: WebSocket.RawData) => {
+        const response = JSON.parse(data.toString())
+        if (response.id === id) { clearTimeout(timer); client.off('message', onMessage); resolve(response) }
+      }
+      client.on('message', onMessage)
+      client.send(JSON.stringify({ id, method }))
+    })
+    assert.deepEqual(await request(1, 'Browser.setDownloadBehavior'), { id: 1, result: {} })
+    assert.deepEqual(await request(2, 'Browser.getVersion'), { id: 2, result: { product: 'Chrome/83' } })
+    assert.deepEqual(received, ['Browser.getVersion'])
+  } finally {
+    client.close()
+    await proxy.close()
+    await new Promise<void>(resolve => upstream.close(() => resolve()))
+  }
 })
 test('startup failure and timeout dispose the isolated profile and detached child processes', async () => {
   const before = (await readdir(tmpdir())).filter(x => x.startsWith('quickpick-benchmark-test-cleanup-')).sort()

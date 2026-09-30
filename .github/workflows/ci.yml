@@ -31,7 +31,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm test
   benchmark:
-    name: Desktop benchmark (all four editors)
+    name: Desktop benchmark (all five editors)
     needs: check
     runs-on: ubuntu-24.04
     timeout-minutes: 60
@@ -53,7 +53,7 @@ jobs:
           path: .tmp/apps
           key: editors-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('config/editors.lock.json') }}
       - run: npm run setup
-      - name: Benchmark all four editors, latency, profile, traffic, rendering and paint passes
+      - name: Benchmark all five editors; Atom latency and profile passes
         run: xvfb-run -a npm run benchmark -- --repeats ${{ github.event_name == 'pull_request' && '1' || '5' }}
       - run: npm run report
       - uses: actions/upload-artifact@v4
