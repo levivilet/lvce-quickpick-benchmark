@@ -18,6 +18,15 @@
     "binary": "VSCode-linux-x64/code"
   },
   {
+    "id": "cursor",
+    "name": "Cursor",
+    "version": "3.22.12",
+    "archive": "cursor_3.22.12_amd64.deb",
+    "url": "https://downloads.cursor.com/production/3a92974361033b2051526321308c2740fe5912c5/linux/x64/deb/amd64/deb/cursor_3.22.12_amd64.deb",
+    "sha256": "8b9198f7dde79f7e27cc83dabf3c66a93ca5303b6919719100c82f29d9498a65",
+    "binary": "usr/share/cursor/cursor"
+  },
+  {
     "id": "theia",
     "name": "Eclipse Theia IDE",
     "version": "1.75.0.117",

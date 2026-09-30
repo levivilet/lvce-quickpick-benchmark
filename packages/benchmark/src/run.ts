@@ -31,7 +31,7 @@ for (let repeat = 0; repeat < repeats; repeat++) {
     const trial: any = { editor: editor.id, mode, repeat, filename, status: 'failed' }
     let app: Awaited<ReturnType<typeof launch>> | undefined
     try {
-      app = await launch(editor, mode === 'profile', `results/${key}.log`, 30000, mode === 'traffic')
+      app = await launch(editor, mode === 'profile', `results/${key}.log`, editor.id === 'cursor' ? 60000 : 30000, mode === 'traffic')
       await search(app.page, editor.id, filename)
       if (mode !== 'paint') await app.page.keyboard.press('Escape')
       trial.readiness = await settleTargets(app.browser, editor.id)

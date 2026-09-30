@@ -3,6 +3,7 @@ export interface Selectors { input: string; row: string; label: string; highligh
 export const adapters: Record<string, Selectors> = {
   lvce: { input: 'input[name="QuickPickInput"]', row: '.QuickPickItem', label: '.QuickPickItemLabel', highlight: '.QuickPickHighlight', busy: '[role=progressbar], [aria-busy=true]' },
   vscode: { input: '.quick-input-widget input', row: '.quick-input-list .monaco-list-row', label: '.label-name', highlight: '.label-name .highlight', busy: '.quick-input-widget .monaco-progress-container.active' },
+  cursor: { input: '.quick-input-widget input[type="text"]', row: '.quick-input-list .monaco-list-row', label: '.label-name', highlight: '.label-name .highlight', busy: '.quick-input-widget .monaco-progress-container.active' },
   theia: { input: '.quick-input-widget input', row: '.quick-input-list .monaco-list-row', label: '.label-name', highlight: '.label-name .highlight', busy: '.quick-input-widget .monaco-progress-container.active' },
 }
 // Runs wholly in the renderer: trusted keydown to query-qualified DOM + two frames.

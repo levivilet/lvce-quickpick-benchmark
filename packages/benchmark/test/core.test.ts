@@ -3,12 +3,15 @@ import assert from 'node:assert/strict'
 import { chromium } from 'playwright'
 import { arm, collect, adapters } from '../src/adapters.ts'
 import { rendererJavaScriptMs, summarize } from '../src/profiles.ts'
+import { cursorWelcomeValues, prepareCursorProfile, seedCursorWelcomeState } from '../src/cursor-profile.ts'
 import { render, statistics } from '../../report/src/render.ts'
 import { launch } from '../src/launch.ts'
 import { summarizeRenderingTrace } from '../src/rendering.ts'
 import { collectPaintMetrics } from '../src/paintMetrics.ts'
-import { readdir, mkdir, readFile, writeFile, rm } from 'node:fs/promises'
+import { readdir, mkdir, mkdtemp, readFile, writeFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
+import { DatabaseSync } from 'node:sqlite'
+import { spawn } from 'node:child_process'
 
 const profile = { startTime: 0, endTime: 6000, nodes: [{ id: 1, callFrame: { functionName: 'filter', url: 'app.js' } }, { id: 2, callFrame: { functionName: '(idle)', url: '' } }, { id: 3, callFrame: { functionName: '(garbage collector)', url: '' } }], samples: [1, 2, 3], timeDeltas: [1000, 2000, 3000] }
 test('profile accounting excludes idle and VM samples and rejects incomplete data', () => {
@@ -40,9 +43,67 @@ test('statistics and report preserve unavailable data and escape external labels
   assert(!html.includes('<script>x</script>'))
   assert(html.includes('&lt;script&gt;'))
   assert(html.includes('raw/results.json'))
-  const threeEditors = render({ created: 'today', editors: [{ id: 'lvce', name: 'LVCE Editor', version: '1' }, { id: 'vscode', name: 'VS Code', version: '1' }, { id: 'theia', name: 'Eclipse Theia IDE', version: '1' }], trials: [], repeats: 1, fixture: { commit: 'abc' } })
-  assert(threeEditors.includes('LVCE Editor × VS Code × Eclipse Theia'))
-  assert(threeEditors.includes('viewBox="0 0 640 235"'))
+  const fourEditors = render({ created: 'today', editors: [{ id: 'lvce', name: 'LVCE Editor', version: '1' }, { id: 'vscode', name: 'VS Code', version: '1' }, { id: 'cursor', name: 'Cursor', version: '3.22.12' }, { id: 'theia', name: 'Eclipse Theia IDE', version: '1' }], trials: [], repeats: 1, fixture: { commit: 'abc' } })
+  assert(fourEditors.includes('LVCE Editor × VS Code × Cursor × Eclipse Theia'))
+  assert(fourEditors.includes('viewBox="0 0 640 300"'))
+  assert(fourEditors.includes('Cursor 3.22.12'))
+})
+test('Cursor welcome state is seeded repeat-safely without replacing unrelated profile state', async () => {
+  const root = await mkdtemp(`${tmpdir()}/quickpick-cursor-state-`)
+  const databasePath = `${root}/state.vscdb`
+  const database = new DatabaseSync(databasePath)
+  database.exec('CREATE TABLE ItemTable (key TEXT PRIMARY KEY, value BLOB)')
+  database.prepare('INSERT INTO ItemTable (key, value) VALUES (?, ?)').run('existing-setting', 'preserved')
+  database.close()
+  try {
+    seedCursorWelcomeState(databasePath)
+    seedCursorWelcomeState(databasePath)
+    const seeded = new DatabaseSync(databasePath)
+    try {
+      const actual = new Map(seeded.prepare('SELECT key, value FROM ItemTable').all().map((row: any) => [row.key, row.value]))
+      assert.equal(actual.get('existing-setting'), 'preserved')
+      for (const [key, value] of Object.entries(cursorWelcomeValues)) assert.equal(actual.get(key), value)
+      assert.equal(actual.size, Object.keys(cursorWelcomeValues).length + 1)
+    } finally { seeded.close() }
+  } finally { await rm(root, { recursive: true, force: true }) }
+})
+test('failed Cursor profile bootstrap stops its detached process', async () => {
+  const root = await mkdtemp(`${tmpdir()}/quickpick-cursor-bootstrap-`)
+  const profile = `${root}/profile`
+  let pid = 0
+  try {
+    await assert.rejects(prepareCursorProfile('unused', profile, root, process.env, 200, (_binary, _args, options) => {
+      const child = spawn(process.execPath, ['-e', `setInterval(() => {}, 60000)`], { ...options, stdio: 'ignore' })
+      pid = child.pid!
+      return child
+    }), /did not create a compatible profile database/)
+    assert(pid > 0)
+    await assert.rejects(readFile(`/proc/${pid}/stat`))
+  } finally { await rm(root, { recursive: true, force: true }) }
+})
+test('Cursor profile bootstrap reports a missing executable without waiting for timeout', async () => {
+  const root = await mkdtemp(`${tmpdir()}/quickpick-cursor-missing-`)
+  const started = performance.now()
+  try {
+    await assert.rejects(prepareCursorProfile(`${root}/missing`, `${root}/profile`, root, process.env, 10000), /ENOENT/)
+    assert(performance.now() - started < 2000)
+  } finally { await rm(root, { recursive: true, force: true }) }
+})
+test('Cursor report includes its version, query statistics, screenshot, and raw profile links', () => {
+  const html = render({ created: 'today', editors: [
+    { id: 'lvce', name: 'LVCE Editor', version: '1' },
+    { id: 'vscode', name: 'VS Code', version: '1' },
+    { id: 'cursor', name: 'Cursor', version: '3.22.12' },
+    { id: 'theia', name: 'Eclipse Theia IDE', version: '1' },
+  ], repeats: 1, fixture: { commit: 'abc' }, trials: [
+    { editor: 'cursor', mode: 'latency', status: 'passed', filename: 'quickOpenModel.ts', repeat: 0, samples: [{ milliseconds: 12 }, { milliseconds: 6 }], screenshot: 'cursor-latency.png' },
+    { editor: 'cursor', mode: 'profile', status: 'passed', filename: 'quickOpenModel.ts', repeat: 0, profile: { rendererJavaScriptMs: 2, frontendMs: 3, backendMs: 4, results: [{ side: 'frontend', identity: { type: 'page', targetId: 'cursor-page' }, file: 'cursor.cpuprofile' }] }, screenshot: 'cursor-profile.png' },
+  ] })
+  assert(html.includes('Cursor 3.22.12'))
+  assert(html.includes('12.00'))
+  assert(html.includes('raw/cursor-latency.png'))
+  assert(html.includes('raw/cursor-profile.png'))
+  assert(html.includes('raw/cursor.cpuprofile'))
 })
 test('report renders zero renderer activity and keeps missing renderer data unavailable', () => {
   const base = { created: 'today', editors: [{ id: 'lvce', name: 'LVCE', version: '1' }], repeats: 1, fixture: { commit: 'abc' } }
