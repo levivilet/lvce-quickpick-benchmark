@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { chmod, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 
@@ -21,6 +21,7 @@ for (const editor of editors) {
   if (editor.archive.endsWith('.AppImage')) {
     const directory = `.tmp/apps/${editor.id}`
     await rm(`${directory}/squashfs-root`, { recursive: true, force: true })
+    await chmod(archive, 0o755)
     execFileSync(resolve(archive), ['--appimage-extract'], { cwd: directory, stdio: 'pipe' })
     const metadata = await readFile(`${directory}/squashfs-root/theia-ide-electron-app.desktop`, 'utf8')
     if (!metadata.includes(`X-AppImage-Version=${editor.version}`)) throw new Error(`Theia AppImage version mismatch: ${metadata.match(/X-AppImage-Version=(.+)/)?.[1] ?? 'missing'}`)
