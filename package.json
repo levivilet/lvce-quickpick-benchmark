@@ -1,0 +1,27 @@
+{
+  "name": "lvce-quickpick-benchmark",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "setup": "node packages/benchmark/src/setup.ts",
+    "benchmark": "node packages/benchmark/src/run.ts",
+    "report": "node packages/report/src/report.ts",
+    "type-check": "tsc --noEmit",
+    "test": "node --test packages/benchmark/test/*.test.ts",
+    "lint": "eslint packages"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@types/node": "^24.0.0",
+    "eslint": "^9.39.5",
+    "playwright": "1.58.2",
+    "typescript": "6.0.3",
+    "typescript-eslint": "^8.71.0"
+  },
+  "engines": {
+    "node": ">=24.15.0"
+  }
+}
