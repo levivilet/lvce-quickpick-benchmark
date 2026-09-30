@@ -1,0 +1,81 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: quickpick-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  check:
+    name: Check
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - uses: actions/cache@v4
+        id: modules
+        with:
+          path: '**/node_modules'
+          key: modules-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json', '.nvmrc') }}
+      - run: npm ci
+        if: steps.modules.outputs.cache-hit != 'true'
+      - run: npm run type-check
+      - run: npm run lint
+      - run: npx playwright install --with-deps chromium
+      - run: npm test
+  benchmark:
+    name: Desktop benchmark (both editors)
+    needs: check
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - uses: actions/cache@v4
+        id: modules
+        with:
+          path: '**/node_modules'
+          key: modules-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json', '.nvmrc') }}
+      - run: npm ci
+        if: steps.modules.outputs.cache-hit != 'true'
+      - run: sudo apt-get update && sudo apt-get install -y xvfb ripgrep libgtk-3-0 libnss3 libasound2t64 libgbm1
+      - uses: actions/cache@v4
+        with:
+          path: .tmp/apps
+          key: editors-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('config/editors.lock.json') }}
+      - run: npm run setup
+      - name: Benchmark both editors, latency and profile passes
+        run: xvfb-run -a npm run benchmark -- --repeats ${{ github.event_name == 'pull_request' && '1' || '5' }}
+      - run: npm run report
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: quickpick-results
+          path: results/
+      - uses: actions/upload-pages-artifact@v3
+        if: github.ref == 'refs/heads/main'
+        with:
+          path: site
+  deploy:
+    name: Deploy Pages
+    if: github.ref == 'refs/heads/main'
+    needs: benchmark
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/deploy-pages@v4
+        id: deployment
