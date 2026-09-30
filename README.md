@@ -20,9 +20,9 @@ npm run report
 # Serve site/ with any static HTTP server.
 ```
 
-Use `--editor lvce` or `--editor vscode` and `--mode latency` or `--mode profile`
+Use `--editor lvce` or `--editor vscode` and `--mode latency` or `--mode profile` or `--mode traffic`
 for focused diagnosis. These options overwrite `results/results.json` with that run.
-Without them, every repetition measures both editors, both filenames, and both modes.
+Without them, every repetition measures both editors, both filenames, and all three modes.
 Raw JSON, Chromium `.cpuprofile` files, screenshots and application logs are retained
 in `results/`. `site/raw/` publishes these files alongside the charts.
 
@@ -93,7 +93,7 @@ For a locally unsupported Playwright host OS, set `CHROME_BIN` to a compatible C
 executable for the browser regression tests. Desktop benchmark binaries remain pinned.
 Tests cover stale highlights with unchanged filenames, timeout/page-close behavior,
 launch cleanup, profile accounting and report output. Every PR must pass `Check` and
-`Desktop benchmark (both editors)`; the latter runs real desktop latency and profiling
+`Desktop benchmark (both editors)`; the latter runs real desktop latency, profiling and traffic
 trials for both queries and both editors. Main runs five repetitions and deploys Pages
 only after successful benchmarking. Dependencies are cached by OS, architecture,
 Node version file and lockfile. Editor archives are checksum-verified even on cache hits.
@@ -101,3 +101,47 @@ Node version file and lockfile. Editor archives are checksum-verified even on ca
 No changes to either editor's repository are required. To add another editor, add a
 pinned download, selectors/readiness rules, validated process coverage and real smoke
 coverage. Do not accept a new adapter based only on mocked DOM tests.
+
+## Renderer traffic
+
+The separate `--mode traffic` pass measures **incoming workbench messages** during
+opening and each character, using the same trusted-keydown to query-qualified
+visible-update boundary. The standard run includes all three passes. No instrumentation
+is added to the latency or profile passes. Raw `traffic.samples` retain the query,
+window timestamps, counts and logical bytes by transport; `traffic.worlds` records
+context identities, discovered port/worker counts and each world's original windows.
+The charts pool both filenames and keep opening separate from filtering.
+
+The collector uses the debugger to recover already-created main-world MessagePorts
+and Workers, then observes their incoming `message` events. Hooks discover subsequent
+listener registrations and transferred ports without starting paused ports. Each
+object/event is observed once, regardless of the application's number of listeners.
+An additional isolated preload runs before the application's preload, intercepting
+Electron `ipcRenderer` event delivery and asynchronous `invoke` replies. A real
+four-byte binary IPC probe must pass before a trial can report results. Missing
+preload/context/port coverage, context changes, mismatched windows or unsupported
+payloads fail the trial rather than producing a zero measurement.
+
+**Logical bytes are not exact IPC wire bytes.** Strings and object keys use UTF-8
+length, numbers and Dates use eight bytes, booleans one byte, bigint values use their
+decimal UTF-8 length, and null/undefined use zero. Arrays, plain objects, Maps and
+Sets sum their contents. ArrayBuffers and typed-array/DataView slices use byteLength.
+Repeated references to the same object (including cycles) count once per message;
+distinct views count their respective visible bytes. Container framing, channel
+names, transferred port handles, serialization metadata and protocol overhead are
+excluded. Unsupported object types invalidate byte measurements. Rejected invoke
+replies count the UTF-8 error string exposed to JavaScript.
+
+Counts include background activity delivered during the windows, with no causal
+attribution or background subtraction. Controller gaps between characters are
+excluded. Workbench main-world delivery may cross a thread or process boundary;
+these are not OS-level process network counters. Window-message forwarding is
+excluded to avoid recounting IPC notifications within the renderer. Isolated-world
+ports, worker-to-worker traffic, other frames/windows, sockets/network traffic,
+native internal Electron IPC and synchronous IPC replies are excluded. A MessageEvent data getter hook accounts before application code can mutate or
+detach a received payload; passive listeners provide a fallback for unread messages. Hooks, heap-object discovery (before measurement), IPC interception and
+payload traversal add overhead. Do not use traffic-pass durations as latency results.
+
+Implementation references: [CDP object discovery](https://chromedevtools.github.io/devtools-protocol/tot/Runtime/#method-queryObjects),
+[Electron session preloads](https://www.electronjs.org/docs/latest/api/session#sesregisterpreloadscriptscript),
+and [Electron MessagePorts](https://www.electronjs.org/docs/latest/tutorial/message-ports).
