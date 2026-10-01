@@ -38,7 +38,9 @@ Chromium user data and XDG config/data/cache/state directories. Cursor gets a
 temporary `HOME` too; other editors keep the actual home directory. The editor process tree is stopped and its profile removed
 on completion, launch failure, timeout or editor crash. Runs use Xvfb; they do not
 control an existing desktop editor. Third-party extensions, updates and telemetry are
-disabled where the editor supports those launch/settings options. Atom receives a private
+disabled where the editor supports those launch/settings options. Every editor uses a
+1280 × 900 content viewport, recorded with the results, so app-specific default window
+sizes do not change the visible quick-pick rows or painted regions. Atom receives a private
 `HOME`, `ATOM_HOME`, XDG directories, and Chromium profile. Its Electron 9 CDP connection is
 adapted for Playwright's unsupported download-behavior preference; the benchmark does not download
 from the editor. Cursor is pinned
