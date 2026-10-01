@@ -67,6 +67,63 @@ test('statistics and report preserve unavailable data and escape external labels
   assert(fiveEditors.includes('viewBox="0 0 640 365"'))
   assert(fiveEditors.includes('Atom (archived) 1.60.0'))
 })
+test('benchmark charts and tables sort each metric by median, retain ties, and keep unavailable results last', () => {
+  const editors = [
+    { id: 'lvce', name: 'LVCE Editor', version: '1' },
+    { id: 'vscode', name: 'VS Code', version: '1' },
+    { id: 'alpha', name: 'Alpha', version: '1' },
+    { id: 'beta', name: 'Beta', version: '1' },
+    { id: 'zero', name: 'Zero', version: '1' },
+    { id: 'missing', name: 'Missing', version: '1' },
+  ]
+  const measurements = {
+    lvce: { latency: [4, 4, 4], renderer: 3, frontend: 4, backend: 1, traffic: [4, 400], rendering: [4, 1, 4, 1] },
+    vscode: { latency: [1, 1, 1], renderer: 4, frontend: 5, backend: 3, traffic: [1, 100], rendering: [1, 3, 1, 3] },
+    alpha: { latency: [2, 5, 5], renderer: 1, frontend: 2, backend: 4, traffic: [2, 200], rendering: [2, 4, 2, 4] },
+    beta: { latency: [3, 2, 2], renderer: 2, frontend: 3, backend: 2, traffic: [3, 300], rendering: [3, 2, 3, 2] },
+    zero: { latency: [0, 0, 0], renderer: 0, frontend: 0, backend: 0, traffic: [0, 0], rendering: [0, 0, 0, 0] },
+  }
+  const trials = editors.flatMap(editor => {
+    const value = measurements[editor.id as keyof typeof measurements]
+    if (!value) return []
+    return [
+      { editor: editor.id, mode: 'latency', status: 'passed', samples: value.latency.map(milliseconds => ({ milliseconds })) },
+      { editor: editor.id, mode: 'profile', status: 'passed', profile: { rendererJavaScriptMs: value.renderer, frontendMs: value.frontend, backendMs: value.backend } },
+      { editor: editor.id, mode: 'traffic', status: 'passed', traffic: { samples: [{ messages: value.traffic[0], logicalBytes: value.traffic[1] }, { messages: value.traffic[0], logicalBytes: value.traffic[1] }] } },
+      { editor: editor.id, mode: 'render', status: 'passed', rendering: { styleRecalculationMs: value.rendering[0], paintMs: value.rendering[1], styleRecalculationCount: value.rendering[2], paintEventCount: value.rendering[3] } },
+    ]
+  })
+  const html = render({ created: 'today', editors, trials, repeats: 1, fixture: { commit: 'abc' } })
+  const sections = [...html.matchAll(/<section><h2>(.*?)<\/h2>([\s\S]*?)<\/section>/g)]
+  const expectedByChart: Record<string, string[]> = {
+    'Open quickpick': ['Zero', 'VS Code', 'Alpha', 'Beta', 'LVCE Editor', 'Missing'],
+    'Filter each character': ['Zero', 'VS Code', 'Beta', 'LVCE Editor', 'Alpha', 'Missing'],
+    'Complete filename search': ['Zero', 'VS Code', 'Beta', 'LVCE Editor', 'Alpha', 'Missing'],
+    'Renderer JavaScript': ['Zero', 'Alpha', 'Beta', 'LVCE Editor', 'VS Code', 'Missing'],
+    'Frontend JavaScript': ['Zero', 'Alpha', 'Beta', 'LVCE Editor', 'VS Code', 'Missing'],
+    'Backend JavaScript': ['Zero', 'LVCE Editor', 'Beta', 'VS Code', 'Alpha', 'Missing'],
+    'Open quickpick: incoming messages': ['Zero', 'VS Code', 'Alpha', 'Beta', 'LVCE Editor', 'Missing'],
+    'Filter each character: incoming messages': ['Zero', 'VS Code', 'Alpha', 'Beta', 'LVCE Editor', 'Missing'],
+    'Open quickpick: incoming payload': ['Zero', 'VS Code', 'Alpha', 'Beta', 'LVCE Editor', 'Missing'],
+    'Filter each character: incoming payload': ['Zero', 'VS Code', 'Alpha', 'Beta', 'LVCE Editor', 'Missing'],
+    'CSS style recalculation': ['Zero', 'VS Code', 'Alpha', 'Beta', 'LVCE Editor', 'Missing'],
+    'Paint work': ['Zero', 'LVCE Editor', 'Beta', 'VS Code', 'Alpha', 'Missing'],
+    'Style recalculation events': ['Zero', 'VS Code', 'Alpha', 'Beta', 'LVCE Editor', 'Missing'],
+    'Paint events': ['Zero', 'LVCE Editor', 'Beta', 'VS Code', 'Alpha', 'Missing'],
+  }
+  assert.equal(sections.length, Object.keys(expectedByChart).length)
+  for (const section of sections) {
+    const [, title, body] = section
+    const expected = expectedByChart[title]
+    assert(expected, `Unexpected chart: ${title}`)
+    const tableOrder = [...body.matchAll(/<tr><td>(.*?)<\/td>/g)].map(match => match[1])
+    const chartOrder = [...body.matchAll(/<text x="0" y="\d+" fill="currentColor">(.*?)<\/text>/g)].map(match => match[1])
+    assert.deepEqual(tableOrder, expected, `${title} table order`)
+    assert.deepEqual(chartOrder, expected, `${title} chart order`)
+  }
+  assert.match(html, /LVCE Editor<\/text><rect[^>]+fill="#0f766e"/)
+  assert.match(html, /0\.00 ms/)
+})
 test('Cursor welcome state is seeded repeat-safely without replacing unrelated profile state', async () => {
   const root = await mkdtemp(`${tmpdir()}/quickpick-cursor-state-`)
   const databasePath = `${root}/state.vscdb`
