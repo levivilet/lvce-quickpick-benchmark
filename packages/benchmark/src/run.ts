@@ -1,6 +1,6 @@
 import { readFile, mkdir, writeFile } from 'node:fs/promises'
 import { execFileSync } from 'node:child_process'
-import { launch, type Editor } from './launch.ts'
+import { benchmarkViewport, launch, type Editor } from './launch.ts'
 import { settleTargets } from './readiness.ts'
 import { search } from './adapters.ts'
 import { attachTraffic } from './traffic.ts'
@@ -22,7 +22,7 @@ for (const file of filenames) {
   if (!execFileSync('git', ['-C', '.tmp/fixture', 'ls-files'], { encoding: 'utf8' }).split('\n').some(path => path.endsWith(`/${file}`))) throw new Error(`Missing fixture file ${file}`)
 }
 await mkdir('results', { recursive: true })
-const report: any = { protocol: 'query-highlights-two-frames-v1', created: new Date().toISOString(), fixture, editors, environment: { platform: process.platform, arch: process.arch, node: process.version }, repeats, filenames, trials: [] }
+const report: any = { protocol: 'query-highlights-two-frames-v1', created: new Date().toISOString(), fixture, editors, environment: { platform: process.platform, arch: process.arch, node: process.version, viewport: benchmarkViewport }, repeats, filenames, trials: [] }
 for (let repeat = 0; repeat < repeats; repeat++) {
   // Alternate editor order across repetitions to reduce order bias.
   const order = repeat % 2 ? [...editors].reverse() : editors

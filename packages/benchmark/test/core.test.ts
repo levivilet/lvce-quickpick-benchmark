@@ -5,7 +5,7 @@ import { arm, collect, adapters } from '../src/adapters.ts'
 import { rendererJavaScriptMs, summarize } from '../src/profiles.ts'
 import { cursorWelcomeValues, prepareCursorProfile, seedCursorWelcomeState } from '../src/cursor-profile.ts'
 import { render, statistics } from '../../report/src/render.ts'
-import { launch, profileCapabilities, utilityInstrumentation } from '../src/launch.ts'
+import { benchmarkViewport, launch, profileCapabilities, setBenchmarkViewport, utilityInstrumentation } from '../src/launch.ts'
 import { createLegacyCdpProxy } from '../src/cdp-compat.ts'
 import { WebSocket, WebSocketServer } from 'ws'
 import { summarizeRenderingTrace } from '../src/rendering.ts'
@@ -23,6 +23,17 @@ test('profile accounting excludes idle and VM samples and rejects incomplete dat
   assert.throws(() => summarize({ ...profile, timeDeltas: [] }))
   assert.throws(() => summarize({ ...profile, samples: [99, 2, 3] }))
   assert.throws(() => summarize({ ...profile, samples: [], timeDeltas: [] }))
+})
+test('benchmark viewport is fixed across editor trials', async () => {
+  assert.deepEqual(benchmarkViewport, { width: 1280, height: 900 })
+  const browser = await chromium.launch({ executablePath: process.env.CHROME_BIN })
+  try {
+    const page = await browser.newPage()
+    await setBenchmarkViewport(page)
+    assert.deepEqual(await page.evaluate(() => ({ width: innerWidth, height: innerHeight })), benchmarkViewport)
+  } finally {
+    await browser.close()
+  }
 })
 test('renderer JavaScript uses only the application page profile and requires its coverage', () => {
   const results = [

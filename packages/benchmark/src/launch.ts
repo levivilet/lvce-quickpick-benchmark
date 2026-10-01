@@ -8,6 +8,13 @@ import { Protocol } from './protocol.ts'
 import { trafficPreload } from './traffic-runtime.ts'
 import { prepareCursorProfile } from './cursor-profile.ts'
 import { createLegacyCdpProxy } from './cdp-compat.ts'
+import type { Page } from 'playwright'
+
+export const benchmarkViewport = { width: 1280, height: 900 } as const
+
+export async function setBenchmarkViewport(page: Page): Promise<void> {
+  await page.setViewportSize(benchmarkViewport)
+}
 
 export interface Editor { id: string; name: string; version: string; binary: string }
 export interface ProfileCapabilities { requireBackendProcess: boolean; requireRendererWorker: boolean; processApis: ('utilityProcess' | 'childProcessFork')[]; legacyRequire?: boolean }
@@ -165,9 +172,7 @@ export async function launch(editor: Editor, profile: boolean, logPath: string, 
       const pages = browser.contexts()[0]?.pages().map(candidate => candidate.url())
       throw new Error(`No workbench page: ${JSON.stringify({ pages })}`)
     }
-    if (editor.id === 'atom') {
-      await page.setViewportSize({ width: 1280, height: 800 })
-    }
+    await setBenchmarkViewport(page)
     page.setDefaultTimeout(20000)
     const workbench = page.locator(editor.id === 'lvce' ? '[role=tree]' : editor.id === 'atom' ? 'atom-workspace' : '.monaco-workbench').first()
     await workbench.waitFor(editor.id === 'atom' ? { state: 'attached' } : undefined)
