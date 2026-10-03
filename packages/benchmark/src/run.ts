@@ -41,6 +41,9 @@ for (let repeat = 0; repeat < repeats; repeat++) {
         await app.page.screenshot({ path: `results/${key}.png` })
         trial.screenshot = `${key}.png`
         trial.paintMetrics = await collectPaintMetrics(app.page)
+        if (!trial.paintMetrics.available || !trial.paintMetrics.timingsAvailable || !trial.paintMetrics.commands?.some((command: any) => command.timedCount > 0)) {
+          throw new Error(`No measured paint command durations: ${trial.paintMetrics.timingReason ?? trial.paintMetrics.reason ?? 'empty snapshot'}`)
+        }
       }
       else if (mode === 'traffic') {
         const collector = await attachTraffic(app)

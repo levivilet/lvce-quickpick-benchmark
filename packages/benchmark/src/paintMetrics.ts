@@ -1,7 +1,7 @@
 import type { Page } from 'playwright'
 
-interface ContentLayer { layerId: string; drawsContent: boolean }
-export interface PaintCommandCount { method: string; count: number; durationMs?: number }
+interface ContentLayer { layerId: string; drawsContent: boolean; width: number; height: number }
+export interface PaintCommandCount { method: string; count: number; durationMs?: number; timedCount?: number }
 export interface PaintMetrics {
   available: boolean
   reason?: string
@@ -9,6 +9,7 @@ export interface PaintMetrics {
   commands?: PaintCommandCount[]
   timingsAvailable?: boolean
   timingReason?: string
+  timingsComplete?: boolean
 }
 
 interface CDPSessionLike {
@@ -20,6 +21,9 @@ interface CDPSessionLike {
 
 const profileRepeatCount = 1
 const profileTimeoutMs = 10000
+// Chromium allocates a 4-byte raster pixel for the entire layer before applying clipRect.
+// Bound each replay surface to 64 MiB; retain counts and report missing timing coverage.
+const maxProfilePixels = 16 * 1024 * 1024
 
 function averageStepDurations(timings: unknown, stepCount: number): number[] {
   if (!Array.isArray(timings) || timings.length !== profileRepeatCount) throw new Error('Paint Profiler returned an unexpected number of timing runs')
@@ -80,8 +84,9 @@ export async function collectPaintMetrics(page: Page, timeoutMs = 5000, timingTi
 
     const counts = new Map<string, number>()
     const durationMs = new Map<string, number>()
-    let timingReason: string | undefined
-    const profiledLayers: Array<{ layerId: string; methods: string[] }> = []
+    const timedCounts = new Map<string, number>()
+    const timingReasons = new Set<string>()
+    const profiledLayers: Array<{ layer: ContentLayer; methods: string[] }> = []
     let profiledLayerCount = 0
     for (const layer of contentLayers) {
       let snapshotId: string | undefined
@@ -96,7 +101,7 @@ export async function collectPaintMetrics(page: Page, timeoutMs = 5000, timingTi
         for (const method of methods) {
           counts.set(method, (counts.get(method) ?? 0) + 1)
         }
-        profiledLayers.push({ layerId: layer.layerId, methods })
+        profiledLayers.push({ layer, methods })
         profiledLayerCount++
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
@@ -110,7 +115,12 @@ export async function collectPaintMetrics(page: Page, timeoutMs = 5000, timingTi
       }
     }
     if (!profiledLayerCount) return { available: false, reason: 'No content layer produced a paint snapshot' }
-    for (const { layerId, methods } of profiledLayers) {
+    for (const { layer, methods } of profiledLayers) {
+      const { layerId, width, height } = layer
+      if (!Number.isFinite(width) || !Number.isFinite(height) || width < 0 || height < 0 || width * height > maxProfilePixels) {
+        timingReasons.add('Some layers exceed the 64 MiB replay surface limit or have unknown dimensions; their timings are unavailable')
+        continue
+      }
       let snapshotId: string | undefined
       try {
         const snapshot = await cdp.send('LayerTree.makeSnapshot', { layerId })
@@ -118,12 +128,21 @@ export async function collectPaintMetrics(page: Page, timeoutMs = 5000, timingTi
         const id: string = snapshot.snapshotId
         snapshotId = id
         snapshots.push(id)
+        // A recreated snapshot can change even when the number of commands does not.
+        const { commandLog } = await cdp.send('LayerTree.snapshotCommandLog', { snapshotId: id })
+        if (commandLog.length !== methods.length || commandLog.some((command: { method?: unknown }, index: number) => (typeof command.method === 'string' && command.method ? command.method : 'unknown') !== methods[index])) {
+          throw new Error('Paint snapshot changed between count and timing capture')
+        }
         const stepDurations = await profileSnapshot(cdp, id, methods.length, timingTimeoutMs)
-        methods.forEach((method, index) => durationMs.set(method, (durationMs.get(method) ?? 0) + stepDurations[index]))
+        methods.forEach((method, index) => {
+          durationMs.set(method, (durationMs.get(method) ?? 0) + stepDurations[index])
+          timedCounts.set(method, (timedCounts.get(method) ?? 0) + 1)
+        })
       } catch (error) {
-        timingReason = error instanceof Error ? error.message : String(error)
+        const timingReason = error instanceof Error ? error.message : String(error)
+        timingReasons.add(timingReason)
         profileTimedOut = /Paint Profiler timed out/.test(timingReason)
-        break
+        if (profileTimedOut) break
       } finally {
         if (snapshotId && !profileTimedOut) {
           await cdp.send('LayerTree.releaseSnapshot', { snapshotId }).catch(() => undefined)
@@ -131,12 +150,14 @@ export async function collectPaintMetrics(page: Page, timeoutMs = 5000, timingTi
         }
       }
     }
+    const timingReason = [...timingReasons].join('; ') || undefined
     return {
       available: true,
       contentLayerCount: profiledLayerCount,
-      timingsAvailable: !timingReason,
+      timingsAvailable: !timingReason || timedCounts.size > 0,
+      ...(timingReason && timedCounts.size > 0 ? { timingsComplete: false } : {}),
       ...(timingReason ? { timingReason } : {}),
-      commands: [...counts].map(([method, count]) => ({ method, count, ...(!timingReason ? { durationMs: durationMs.get(method) ?? 0 } : {}) })).sort((a, b) => b.count - a.count || a.method.localeCompare(b.method)),
+      commands: [...counts].map(([method, count]) => ({ method, count, ...(timedCounts.has(method) ? { durationMs: durationMs.get(method), timedCount: timedCounts.get(method) } : {}) })).sort((a, b) => b.count - a.count || a.method.localeCompare(b.method)),
     }
   } catch (error) {
     return { available: false, reason: error instanceof Error ? error.message : String(error) }
@@ -144,7 +165,7 @@ export async function collectPaintMetrics(page: Page, timeoutMs = 5000, timingTi
     cdp.off('LayerTree.layerTreeDidChange', layerTreeChanged)
     if (profileTimedOut) {
       // Detaching drops snapshots still owned by this CDP session and abandons the stalled command.
-      await cdp.detach().catch(() => {})
+      void cdp.detach().catch(() => {})
     } else {
       await Promise.all(snapshots.map(snapshotId => cdp.send('LayerTree.releaseSnapshot', { snapshotId }).catch(() => undefined)))
       if (domainsEnabled) {

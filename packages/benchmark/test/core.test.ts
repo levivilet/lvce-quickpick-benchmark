@@ -232,7 +232,7 @@ test('paint metrics sum exact commands across content layers and release every s
     detach: async () => {},
     send: async (method: string, params?: any) => {
       if (method === 'LayerTree.enable') handlers.get('LayerTree.layerTreeDidChange')?.({ layers: [
-        { layerId: 'one', drawsContent: true }, { layerId: 'empty', drawsContent: false }, { layerId: 'two', drawsContent: true },
+        { layerId: 'one', drawsContent: true, width: 1280, height: 900 }, { layerId: 'empty', drawsContent: false }, { layerId: 'two', drawsContent: true, width: 1280, height: 900 },
       ] })
       if (method === 'LayerTree.makeSnapshot') return { snapshotId: `snapshot-${params.layerId}` }
       if (method === 'LayerTree.snapshotCommandLog') return { commandLog: params.snapshotId.endsWith('one') ? [{ method: 'drawTextBlob' }, { method: 'clipRect' }] : [{ method: 'drawTextBlob' }, { method: 'drawTextBlob' }] }
@@ -242,7 +242,7 @@ test('paint metrics sum exact commands across content layers and release every s
     },
   }
   const page = { context: () => ({ newCDPSession: async () => cdp }) } as any
-  assert.deepEqual(await collectPaintMetrics(page), { available: true, contentLayerCount: 2, timingsAvailable: true, commands: [{ method: 'drawTextBlob', count: 3, durationMs: 8 }, { method: 'clipRect', count: 1, durationMs: 2 }] })
+  assert.deepEqual(await collectPaintMetrics(page), { available: true, contentLayerCount: 2, timingsAvailable: true, commands: [{ method: 'drawTextBlob', count: 3, durationMs: 8, timedCount: 3 }, { method: 'clipRect', count: 1, durationMs: 2, timedCount: 1 }] })
   assert.deepEqual(released.sort(), ['snapshot-one', 'snapshot-one', 'snapshot-two', 'snapshot-two'])
   assert.equal(handlers.size, 0)
 })
@@ -254,7 +254,7 @@ test('paint metrics release earlier snapshots when a later layer fails', async (
     off: (name: string) => handlers.delete(name),
     detach: async () => {},
     send: async (method: string, params?: any) => {
-      if (method === 'LayerTree.enable') handlers.get('LayerTree.layerTreeDidChange')?.({ layers: [{ layerId: 'one', drawsContent: true }, { layerId: 'two', drawsContent: true }] })
+      if (method === 'LayerTree.enable') handlers.get('LayerTree.layerTreeDidChange')?.({ layers: [{ layerId: 'one', drawsContent: true, width: 1280, height: 900 }, { layerId: 'two', drawsContent: true, width: 1280, height: 900 }] })
       if (method === 'LayerTree.makeSnapshot' && params.layerId === 'two') throw new Error('snapshot unavailable')
       if (method === 'LayerTree.makeSnapshot') return { snapshotId: 'snapshot-one' }
       if (method === 'LayerTree.snapshotCommandLog') return { commandLog: [] }
@@ -274,7 +274,7 @@ test('paint timing failures keep command counts and mark timings unavailable', a
     off: (name: string) => handlers.delete(name),
     detach: async () => {},
     send: async (method: string, _params?: any) => {
-      if (method === 'LayerTree.enable') handlers.get('LayerTree.layerTreeDidChange')?.({ layers: [{ layerId: 'one', drawsContent: true }] })
+      if (method === 'LayerTree.enable') handlers.get('LayerTree.layerTreeDidChange')?.({ layers: [{ layerId: 'one', drawsContent: true, width: 1280, height: 900 }] })
       if (method === 'LayerTree.makeSnapshot') return { snapshotId: 'snapshot-one' }
       if (method === 'LayerTree.snapshotCommandLog') return { commandLog: [{ method: 'drawRect' }, { method: 'drawRect' }] }
       if (method === 'LayerTree.profileSnapshot') return { timings: [[0.001]] }
@@ -291,9 +291,9 @@ test('stalled paint profiling times out, preserves all counts, and detaches its 
   const cdp = {
     on: (name: string, handler: (event: any) => void) => handlers.set(name, handler),
     off: (name: string) => handlers.delete(name),
-    detach: async () => { detached = true },
+    detach: async () => { detached = true; await new Promise(() => {}) },
     send: async (method: string, params?: any) => {
-      if (method === 'LayerTree.enable') handlers.get('LayerTree.layerTreeDidChange')?.({ layers: [{ layerId: 'one', drawsContent: true }, { layerId: 'two', drawsContent: true }] })
+      if (method === 'LayerTree.enable') handlers.get('LayerTree.layerTreeDidChange')?.({ layers: [{ layerId: 'one', drawsContent: true, width: 1280, height: 900 }, { layerId: 'two', drawsContent: true, width: 1280, height: 900 }] })
       if (method === 'LayerTree.makeSnapshot') return { snapshotId: `snapshot-${params.layerId}` }
       if (method === 'LayerTree.snapshotCommandLog') return { commandLog: [{ method: params.snapshotId.endsWith('one') ? 'drawRect' : 'drawTextBlob' }] }
       if (method === 'LayerTree.profileSnapshot') return new Promise(() => {})
@@ -341,7 +341,7 @@ test('paint report keeps counts, ranks measured methods by replay duration, and 
   assert(html.includes('0.0015'))
   assert(html.includes('3 available observations'))
   assert(html.includes('2 with timings'))
-  assert(html.includes('Average total (ms/load)'))
+  assert(html.includes('Average measured total (ms/load)'))
   assert(!html.includes('99'))
   assert(html.includes('Unavailable: no valid final content-layer snapshots'))
   assert(!html.includes('<script>LVCE</script>'))
@@ -468,4 +468,70 @@ test('startup failure and timeout dispose the isolated profile and detached chil
     assert.equal(running, false, 'detached descendants must be stopped before profile cleanup')
     assert.deepEqual((await readdir(tmpdir())).filter(x => x.startsWith('quickpick-benchmark-test-cleanup-')).sort(), before)
   } finally { await rm('.tmp/apps/test-cleanup', { recursive: true, force: true }); await rm(marker, { force: true }) }
+})
+
+test('oversized layers retain counts without replaying, and later layers still have timings', async () => {
+  const handlers = new Map<string, (event: any) => void>()
+  const replayed: string[] = []
+  const released: string[] = []
+  const cdp = {
+    on: (name: string, handler: (event: any) => void) => handlers.set(name, handler),
+    off: (name: string) => handlers.delete(name),
+    detach: async () => {},
+    send: async (method: string, params?: any) => {
+      if (method === 'LayerTree.enable') handlers.get('LayerTree.layerTreeDidChange')?.({ layers: [
+        { layerId: 'huge', drawsContent: true, width: 16777216, height: 16777217 },
+        { layerId: 'normal', drawsContent: true, width: 1280, height: 900 },
+      ] })
+      if (method === 'LayerTree.makeSnapshot') return { snapshotId: params.layerId }
+      if (method === 'LayerTree.snapshotCommandLog') return { commandLog: [{ method: 'drawRect' }, { method: params.snapshotId === 'huge' ? 'drawPaint' : 'drawTextBlob' }] }
+      if (method === 'LayerTree.profileSnapshot') { replayed.push(params.snapshotId); return { timings: [[0.001, 0.002]] } }
+      if (method === 'LayerTree.releaseSnapshot') released.push(params.snapshotId)
+      return {}
+    },
+  }
+  const metrics = await collectPaintMetrics({ context: () => ({ newCDPSession: async () => cdp }) } as any)
+  assert.equal(metrics.timingsAvailable, true)
+  assert.equal(metrics.timingsComplete, false)
+  assert.match(metrics.timingReason!, /64 MiB/)
+  assert.deepEqual(metrics.commands, [
+    { method: 'drawRect', count: 2, durationMs: 1, timedCount: 1 },
+    { method: 'drawPaint', count: 1 },
+    { method: 'drawTextBlob', count: 1, durationMs: 2, timedCount: 1 },
+  ])
+  assert.deepEqual(replayed, ['normal'])
+  assert.deepEqual(released, ['huge', 'normal', 'normal'])
+  assert.equal(handlers.size, 0)
+})
+
+test('changed snapshot methods cannot silently acquire another command timing', async () => {
+  const handlers = new Map<string, (event: any) => void>()
+  let captures = 0
+  const cdp = {
+    on: (name: string, handler: (event: any) => void) => handlers.set(name, handler),
+    off: (name: string) => handlers.delete(name),
+    detach: async () => {},
+    send: async (method: string) => {
+      if (method === 'LayerTree.enable') handlers.get('LayerTree.layerTreeDidChange')?.({ layers: [{ layerId: 'one', drawsContent: true, width: 10, height: 10 }] })
+      if (method === 'LayerTree.makeSnapshot') return { snapshotId: 'snapshot' }
+      if (method === 'LayerTree.snapshotCommandLog') return { commandLog: [{ method: captures++ ? 'drawTextBlob' : 'drawRect' }] }
+      if (method === 'LayerTree.profileSnapshot') assert.fail('Changed command log must not be profiled')
+      return {}
+    },
+  }
+  const metrics = await collectPaintMetrics({ context: () => ({ newCDPSession: async () => cdp }) } as any)
+  assert.equal(metrics.timingsAvailable, false)
+  assert.match(metrics.timingReason!, /snapshot changed/)
+  assert.deepEqual(metrics.commands, [{ method: 'drawRect', count: 1 }])
+})
+
+test('partial paint timings show measured coverage without turning missing timings into zeros', () => {
+  const html = render({ created: 'today', editors: [{ id: 'vscode', name: 'VS Code', version: '1' }], repeats: 2, fixture: { commit: 'abc' }, trials: [
+    { editor: 'vscode', mode: 'paint', status: 'passed', paintMetrics: { available: true, timingsAvailable: true, timingsComplete: false, timingReason: 'Oversized <layer>', commands: [{ method: 'drawRect', count: 10, timedCount: 2, durationMs: 4 }, { method: 'drawPaint', count: 1 }] } },
+    { editor: 'vscode', mode: 'paint', status: 'passed', paintMetrics: { available: true, timingsAvailable: true, commands: [{ method: 'drawRect', count: 2, timedCount: 2, durationMs: 2 }] } },
+  ] })
+  assert(html.includes('1 partial'))
+  assert(html.includes('Oversized &lt;layer&gt;'))
+  assert(html.includes('drawRect</code></td><td>6.00 (2–10)</td><td>3.0000</td><td>1.5000</td><td>4/12</td>'))
+  assert(html.includes('drawPaint</code></td><td>0.50 (0–1)</td><td>Unavailable</td><td>Unavailable</td><td>0/1</td>'))
 })
