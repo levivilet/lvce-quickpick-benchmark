@@ -37,6 +37,14 @@ for (let repeat = 0; repeat < repeats; repeat++) {
       trial.readiness = await settleTargets(app.browser, editor.id)
       if (mode === 'profile') trial.profile = await profileWorkload(app, `results/${key}`, () => search(app!.page, editor.id, filename))
       else if (mode === 'render') trial.rendering = await measureRenderingWorkload(app, `results/${key}.trace.json`, () => search(app!.page, editor.id, filename))
+      else if (mode === 'paint') {
+        await app.page.screenshot({ path: `results/${key}.png` })
+        trial.screenshot = `${key}.png`
+        trial.paintMetrics = await collectPaintMetrics(app.page)
+        if (!trial.paintMetrics.available || !trial.paintMetrics.timingsAvailable || !trial.paintMetrics.commands?.some((command: any) => command.timedCount > 0)) {
+          throw new Error(`No measured paint command durations: ${trial.paintMetrics.timingReason ?? trial.paintMetrics.reason ?? 'empty snapshot'}`)
+        }
+      }
       else if (mode === 'traffic') {
         const collector = await attachTraffic(app)
         try {
@@ -46,10 +54,11 @@ for (let repeat = 0; repeat < repeats; repeat++) {
           trial.traffic.samples.forEach((sample: any, index: number) => { sample.query = trial.samples[index].query })
         } finally { await collector.close() }
       }
-      else if (mode === 'paint') trial.paintMetrics = await collectPaintMetrics(app.page)
       else trial.samples = await search(app.page, editor.id, filename)
-      await app.page.screenshot({ path: `results/${key}.png` })
-      trial.screenshot = `${key}.png`
+      if (!trial.screenshot) {
+        await app.page.screenshot({ path: `results/${key}.png` })
+        trial.screenshot = `${key}.png`
+      }
       trial.status = 'passed'
     } catch (error) { trial.error = String(error); console.error(key, error) }
     finally {
