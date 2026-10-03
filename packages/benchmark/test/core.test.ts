@@ -284,6 +284,35 @@ test('paint timing failures keep command counts and mark timings unavailable', a
   const page = { context: () => ({ newCDPSession: async () => cdp }) } as any
   assert.deepEqual(await collectPaintMetrics(page), { available: true, contentLayerCount: 1, timingsAvailable: false, timingReason: 'Paint Profiler timings did not match the command log', commands: [{ method: 'drawRect', count: 2 }] })
 })
+test('stalled paint profiling times out, preserves all counts, and detaches its CDP session', async () => {
+  let detached = false
+  const released: string[] = []
+  const handlers = new Map<string, (event: any) => void>()
+  const cdp = {
+    on: (name: string, handler: (event: any) => void) => handlers.set(name, handler),
+    off: (name: string) => handlers.delete(name),
+    detach: async () => { detached = true },
+    send: async (method: string, params?: any) => {
+      if (method === 'LayerTree.enable') handlers.get('LayerTree.layerTreeDidChange')?.({ layers: [{ layerId: 'one', drawsContent: true }, { layerId: 'two', drawsContent: true }] })
+      if (method === 'LayerTree.makeSnapshot') return { snapshotId: `snapshot-${params.layerId}` }
+      if (method === 'LayerTree.snapshotCommandLog') return { commandLog: [{ method: params.snapshotId.endsWith('one') ? 'drawRect' : 'drawTextBlob' }] }
+      if (method === 'LayerTree.profileSnapshot') return new Promise(() => {})
+      if (method === 'LayerTree.releaseSnapshot') released.push(params.snapshotId)
+      return {}
+    },
+  }
+  const page = { context: () => ({ newCDPSession: async () => cdp }) } as any
+  assert.deepEqual(await collectPaintMetrics(page, 5000, 1), {
+    available: true,
+    contentLayerCount: 2,
+    timingsAvailable: false,
+    timingReason: 'Paint Profiler timed out after 1 ms',
+    commands: [{ method: 'drawRect', count: 1 }, { method: 'drawTextBlob', count: 1 }],
+  })
+  assert.equal(detached, true)
+  assert.deepEqual(released, [])
+  assert.equal(handlers.size, 0)
+})
 test('paint snapshots with no content layers are unavailable', async () => {
   const handlers = new Map<string, (event: any) => void>()
   const cdp = {

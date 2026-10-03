@@ -19,6 +19,7 @@ interface CDPSessionLike {
 }
 
 const profileRepeatCount = 1
+const profileTimeoutMs = 10000
 
 function averageStepDurations(timings: unknown, stepCount: number): number[] {
   if (!Array.isArray(timings) || timings.length !== profileRepeatCount) throw new Error('Paint Profiler returned an unexpected number of timing runs')
@@ -32,7 +33,20 @@ function averageStepDurations(timings: unknown, stepCount: number): number[] {
   return totals.map(duration => duration / profileRepeatCount * 1000)
 }
 
-export async function collectPaintMetrics(page: Page, timeoutMs = 5000): Promise<PaintMetrics> {
+async function profileSnapshot(cdp: CDPSessionLike, snapshotId: string, stepCount: number, timeoutMs: number): Promise<number[]> {
+  let timer: NodeJS.Timeout | undefined
+  try {
+    const { timings } = await Promise.race([
+      cdp.send('LayerTree.profileSnapshot', { snapshotId, minRepeatCount: profileRepeatCount }),
+      new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error(`Paint Profiler timed out after ${timeoutMs} ms`)), timeoutMs) }),
+    ])
+    return averageStepDurations(timings, stepCount)
+  } finally {
+    if (timer) clearTimeout(timer)
+  }
+}
+
+export async function collectPaintMetrics(page: Page, timeoutMs = 5000, timingTimeoutMs = profileTimeoutMs): Promise<PaintMetrics> {
   let cdp: CDPSessionLike
   try { cdp = await page.context().newCDPSession(page) as unknown as CDPSessionLike }
   catch (error) { return { available: false, reason: error instanceof Error ? error.message : String(error) } }
@@ -46,6 +60,7 @@ export async function collectPaintMetrics(page: Page, timeoutMs = 5000): Promise
   cdp.on('LayerTree.layerTreeDidChange', layerTreeChanged)
   const snapshots: string[] = []
   let domainsEnabled = false
+  let profileTimedOut = false
   try {
     await Promise.all([cdp.send('DOM.enable'), cdp.send('Page.enable')])
     await cdp.send('DOM.getDocument')
@@ -66,6 +81,7 @@ export async function collectPaintMetrics(page: Page, timeoutMs = 5000): Promise
     const counts = new Map<string, number>()
     const durationMs = new Map<string, number>()
     let timingReason: string | undefined
+    const profiledLayers: Array<{ snapshotId: string; methods: string[] }> = []
     let profiledLayerCount = 0
     for (const layer of contentLayers) {
       try {
@@ -76,15 +92,7 @@ export async function collectPaintMetrics(page: Page, timeoutMs = 5000): Promise
         for (const method of methods) {
           counts.set(method, (counts.get(method) ?? 0) + 1)
         }
-        if (!timingReason) {
-          try {
-            const { timings } = await cdp.send('LayerTree.profileSnapshot', { snapshotId, minRepeatCount: profileRepeatCount })
-            const stepDurations = averageStepDurations(timings, methods.length)
-            methods.forEach((method, index) => durationMs.set(method, (durationMs.get(method) ?? 0) + stepDurations[index]))
-          } catch (error) {
-            timingReason = error instanceof Error ? error.message : String(error)
-          }
-        }
+        profiledLayers.push({ snapshotId, methods })
         profiledLayerCount++
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
@@ -93,6 +101,16 @@ export async function collectPaintMetrics(page: Page, timeoutMs = 5000): Promise
       }
     }
     if (!profiledLayerCount) return { available: false, reason: 'No content layer produced a paint snapshot' }
+    for (const { snapshotId, methods } of profiledLayers) {
+      try {
+        const stepDurations = await profileSnapshot(cdp, snapshotId, methods.length, timingTimeoutMs)
+        methods.forEach((method, index) => durationMs.set(method, (durationMs.get(method) ?? 0) + stepDurations[index]))
+      } catch (error) {
+        timingReason = error instanceof Error ? error.message : String(error)
+        profileTimedOut = /Paint Profiler timed out/.test(timingReason)
+        break
+      }
+    }
     return {
       available: true,
       contentLayerCount: profiledLayerCount,
@@ -103,11 +121,16 @@ export async function collectPaintMetrics(page: Page, timeoutMs = 5000): Promise
   } catch (error) {
     return { available: false, reason: error instanceof Error ? error.message : String(error) }
   } finally {
-    await Promise.all(snapshots.map(snapshotId => cdp.send('LayerTree.releaseSnapshot', { snapshotId }).catch(() => undefined)))
     cdp.off('LayerTree.layerTreeDidChange', layerTreeChanged)
-    if (domainsEnabled) {
-      await Promise.allSettled([cdp.send('DOM.disable'), cdp.send('LayerTree.disable'), cdp.send('Page.disable')])
+    if (profileTimedOut) {
+      // Detaching drops snapshots still owned by this CDP session and abandons the stalled command.
+      await cdp.detach().catch(() => {})
+    } else {
+      await Promise.all(snapshots.map(snapshotId => cdp.send('LayerTree.releaseSnapshot', { snapshotId }).catch(() => undefined)))
+      if (domainsEnabled) {
+        await Promise.allSettled([cdp.send('DOM.disable'), cdp.send('LayerTree.disable'), cdp.send('Page.disable')])
+      }
+      await cdp.detach().catch(() => {})
     }
-    await cdp.detach().catch(() => {})
   }
 }
