@@ -236,13 +236,13 @@ test('paint metrics sum exact commands across content layers and release every s
       ] })
       if (method === 'LayerTree.makeSnapshot') return { snapshotId: `snapshot-${params.layerId}` }
       if (method === 'LayerTree.snapshotCommandLog') return { commandLog: params.snapshotId.endsWith('one') ? [{ method: 'drawTextBlob' }, { method: 'clipRect' }] : [{ method: 'drawTextBlob' }, { method: 'drawTextBlob' }] }
-      if (method === 'LayerTree.profileSnapshot') return { timings: params.snapshotId.endsWith('one') ? [[0.001, 0.002], [0.002, 0], [0.003, 0.003]] : [[0.003, 0.003], [0.003, 0.003], [0.003, 0.003]] }
+      if (method === 'LayerTree.profileSnapshot') return { timings: params.snapshotId.endsWith('one') ? [[0.001, 0.002]] : [[0.003, 0.004]] }
       if (method === 'LayerTree.releaseSnapshot') released.push(params.snapshotId)
       return {}
     },
   }
   const page = { context: () => ({ newCDPSession: async () => cdp }) } as any
-  assert.deepEqual(await collectPaintMetrics(page), { available: true, contentLayerCount: 2, timingsAvailable: true, commands: [{ method: 'drawTextBlob', count: 3, durationMs: 8 }, { method: 'clipRect', count: 1, durationMs: 1.6666666666666667 }] })
+  assert.deepEqual(await collectPaintMetrics(page), { available: true, contentLayerCount: 2, timingsAvailable: true, commands: [{ method: 'drawTextBlob', count: 3, durationMs: 8 }, { method: 'clipRect', count: 1, durationMs: 2 }] })
   assert.deepEqual(released.sort(), ['snapshot-one', 'snapshot-two'])
   assert.equal(handlers.size, 0)
 })
@@ -277,7 +277,7 @@ test('paint timing failures keep command counts and mark timings unavailable', a
       if (method === 'LayerTree.enable') handlers.get('LayerTree.layerTreeDidChange')?.({ layers: [{ layerId: 'one', drawsContent: true }] })
       if (method === 'LayerTree.makeSnapshot') return { snapshotId: 'snapshot-one' }
       if (method === 'LayerTree.snapshotCommandLog') return { commandLog: [{ method: 'drawRect' }, { method: 'drawRect' }] }
-      if (method === 'LayerTree.profileSnapshot') return { timings: [[0.001], [0.002], [0.003]] }
+      if (method === 'LayerTree.profileSnapshot') return { timings: [[0.001]] }
       return {}
     },
   }

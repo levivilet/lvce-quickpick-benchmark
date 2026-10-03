@@ -18,7 +18,7 @@ interface CDPSessionLike {
   detach(): Promise<void>
 }
 
-const profileRepeatCount = 3
+const profileRepeatCount = 1
 
 function averageStepDurations(timings: unknown, stepCount: number): number[] {
   if (!Array.isArray(timings) || timings.length !== profileRepeatCount) throw new Error('Paint Profiler returned an unexpected number of timing runs')
