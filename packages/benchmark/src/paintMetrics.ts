@@ -81,34 +81,54 @@ export async function collectPaintMetrics(page: Page, timeoutMs = 5000, timingTi
     const counts = new Map<string, number>()
     const durationMs = new Map<string, number>()
     let timingReason: string | undefined
-    const profiledLayers: Array<{ snapshotId: string; methods: string[] }> = []
+    const profiledLayers: Array<{ layerId: string; methods: string[] }> = []
     let profiledLayerCount = 0
     for (const layer of contentLayers) {
+      let snapshotId: string | undefined
       try {
-        const { snapshotId } = await cdp.send('LayerTree.makeSnapshot', { layerId: layer.layerId })
-        snapshots.push(snapshotId)
-        const { commandLog } = await cdp.send('LayerTree.snapshotCommandLog', { snapshotId })
+        const snapshot = await cdp.send('LayerTree.makeSnapshot', { layerId: layer.layerId })
+        if (typeof snapshot.snapshotId !== 'string') throw new Error('LayerTree.makeSnapshot returned no snapshot id')
+        const id: string = snapshot.snapshotId
+        snapshotId = id
+        snapshots.push(id)
+        const { commandLog } = await cdp.send('LayerTree.snapshotCommandLog', { snapshotId: id })
         const methods: string[] = commandLog.map((command: { method?: unknown }) => typeof command.method === 'string' && command.method ? command.method : 'unknown')
         for (const method of methods) {
           counts.set(method, (counts.get(method) ?? 0) + 1)
         }
-        profiledLayers.push({ snapshotId, methods })
+        profiledLayers.push({ layerId: layer.layerId, methods })
         profiledLayerCount++
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
         if (/Layer does not draw content|Layer does not produce picture/.test(message)) continue
         throw error
+      } finally {
+        if (snapshotId) {
+          await cdp.send('LayerTree.releaseSnapshot', { snapshotId }).catch(() => undefined)
+          snapshots.splice(snapshots.indexOf(snapshotId), 1)
+        }
       }
     }
     if (!profiledLayerCount) return { available: false, reason: 'No content layer produced a paint snapshot' }
-    for (const { snapshotId, methods } of profiledLayers) {
+    for (const { layerId, methods } of profiledLayers) {
+      let snapshotId: string | undefined
       try {
-        const stepDurations = await profileSnapshot(cdp, snapshotId, methods.length, timingTimeoutMs)
+        const snapshot = await cdp.send('LayerTree.makeSnapshot', { layerId })
+        if (typeof snapshot.snapshotId !== 'string') throw new Error('LayerTree.makeSnapshot returned no snapshot id')
+        const id: string = snapshot.snapshotId
+        snapshotId = id
+        snapshots.push(id)
+        const stepDurations = await profileSnapshot(cdp, id, methods.length, timingTimeoutMs)
         methods.forEach((method, index) => durationMs.set(method, (durationMs.get(method) ?? 0) + stepDurations[index]))
       } catch (error) {
         timingReason = error instanceof Error ? error.message : String(error)
         profileTimedOut = /Paint Profiler timed out/.test(timingReason)
         break
+      } finally {
+        if (snapshotId && !profileTimedOut) {
+          await cdp.send('LayerTree.releaseSnapshot', { snapshotId }).catch(() => undefined)
+          snapshots.splice(snapshots.indexOf(snapshotId), 1)
+        }
       }
     }
     return {

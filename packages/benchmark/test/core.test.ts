@@ -243,7 +243,7 @@ test('paint metrics sum exact commands across content layers and release every s
   }
   const page = { context: () => ({ newCDPSession: async () => cdp }) } as any
   assert.deepEqual(await collectPaintMetrics(page), { available: true, contentLayerCount: 2, timingsAvailable: true, commands: [{ method: 'drawTextBlob', count: 3, durationMs: 8 }, { method: 'clipRect', count: 1, durationMs: 2 }] })
-  assert.deepEqual(released.sort(), ['snapshot-one', 'snapshot-two'])
+  assert.deepEqual(released.sort(), ['snapshot-one', 'snapshot-one', 'snapshot-two', 'snapshot-two'])
   assert.equal(handlers.size, 0)
 })
 test('paint metrics release earlier snapshots when a later layer fails', async () => {
@@ -310,7 +310,7 @@ test('stalled paint profiling times out, preserves all counts, and detaches its 
     commands: [{ method: 'drawRect', count: 1 }, { method: 'drawTextBlob', count: 1 }],
   })
   assert.equal(detached, true)
-  assert.deepEqual(released, [])
+  assert.deepEqual(released.sort(), ['snapshot-one', 'snapshot-two'])
   assert.equal(handlers.size, 0)
 })
 test('paint snapshots with no content layers are unavailable', async () => {
