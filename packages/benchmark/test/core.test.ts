@@ -236,12 +236,13 @@ test('paint metrics sum exact commands across content layers and release every s
       ] })
       if (method === 'LayerTree.makeSnapshot') return { snapshotId: `snapshot-${params.layerId}` }
       if (method === 'LayerTree.snapshotCommandLog') return { commandLog: params.snapshotId.endsWith('one') ? [{ method: 'drawTextBlob' }, { method: 'clipRect' }] : [{ method: 'drawTextBlob' }, { method: 'drawTextBlob' }] }
+      if (method === 'LayerTree.profileSnapshot') return { timings: params.snapshotId.endsWith('one') ? [[0.001, 0.002], [0.002, 0], [0.003, 0.003]] : [[0.003, 0.003], [0.003, 0.003], [0.003, 0.003]] }
       if (method === 'LayerTree.releaseSnapshot') released.push(params.snapshotId)
       return {}
     },
   }
   const page = { context: () => ({ newCDPSession: async () => cdp }) } as any
-  assert.deepEqual(await collectPaintMetrics(page), { available: true, contentLayerCount: 2, commands: [{ method: 'drawTextBlob', count: 3 }, { method: 'clipRect', count: 1 }] })
+  assert.deepEqual(await collectPaintMetrics(page), { available: true, contentLayerCount: 2, timingsAvailable: true, commands: [{ method: 'drawTextBlob', count: 3, durationMs: 8 }, { method: 'clipRect', count: 1, durationMs: 1.6666666666666667 }] })
   assert.deepEqual(released.sort(), ['snapshot-one', 'snapshot-two'])
   assert.equal(handlers.size, 0)
 })
@@ -266,6 +267,23 @@ test('paint metrics release earlier snapshots when a later layer fails', async (
   assert.deepEqual(released, ['snapshot-one'])
   assert.equal(handlers.size, 0)
 })
+test('paint timing failures keep command counts and mark timings unavailable', async () => {
+  const handlers = new Map<string, (event: any) => void>()
+  const cdp = {
+    on: (name: string, handler: (event: any) => void) => handlers.set(name, handler),
+    off: (name: string) => handlers.delete(name),
+    detach: async () => {},
+    send: async (method: string, _params?: any) => {
+      if (method === 'LayerTree.enable') handlers.get('LayerTree.layerTreeDidChange')?.({ layers: [{ layerId: 'one', drawsContent: true }] })
+      if (method === 'LayerTree.makeSnapshot') return { snapshotId: 'snapshot-one' }
+      if (method === 'LayerTree.snapshotCommandLog') return { commandLog: [{ method: 'drawRect' }, { method: 'drawRect' }] }
+      if (method === 'LayerTree.profileSnapshot') return { timings: [[0.001], [0.002], [0.003]] }
+      return {}
+    },
+  }
+  const page = { context: () => ({ newCDPSession: async () => cdp }) } as any
+  assert.deepEqual(await collectPaintMetrics(page), { available: true, contentLayerCount: 1, timingsAvailable: false, timingReason: 'Paint Profiler timings did not match the command log', commands: [{ method: 'drawRect', count: 2 }] })
+})
 test('paint snapshots with no content layers are unavailable', async () => {
   const handlers = new Map<string, (event: any) => void>()
   const cdp = {
@@ -280,16 +298,21 @@ test('paint snapshots with no content layers are unavailable', async () => {
   const page = { context: () => ({ newCDPSession: async () => cdp }) } as any
   assert.deepEqual(await collectPaintMetrics(page), { available: false, reason: 'No content layers in final snapshot' })
 })
-test('paint report averages available trials, fills missing methods with zero, and excludes failures', () => {
+test('paint report keeps counts, ranks measured methods by replay duration, and reads count-only results', () => {
   const html = render({ created: 'today', editors: [{ id: 'lvce', name: '<script>LVCE</script>', version: '1' }, { id: 'other', name: 'Other', version: '2' }], repeats: 2, fixture: { commit: 'abc' }, trials: [
+    { editor: 'lvce', mode: 'paint', status: 'passed', paintMetrics: { available: true, timingsAvailable: true, commands: [{ method: 'drawTextBlob', count: 2, durationMs: 0.006 }, { method: 'draw<Rect>', count: 1, durationMs: 0.003 }] } },
+    { editor: 'lvce', mode: 'paint', status: 'passed', paintMetrics: { available: true, timingsAvailable: true, commands: [{ method: 'drawTextBlob', count: 1, durationMs: 0.003 }] } },
     { editor: 'lvce', mode: 'paint', status: 'passed', paintMetrics: { available: true, commands: [{ method: 'drawTextBlob', count: 5 }, { method: 'draw<Rect>', count: 1 }] } },
-    { editor: 'lvce', mode: 'paint', status: 'passed', paintMetrics: { available: true, commands: [{ method: 'drawTextBlob', count: 0 }] } },
     { editor: 'lvce', mode: 'paint', status: 'failed', paintMetrics: { available: true, commands: [{ method: 'drawTextBlob', count: 99 }] } },
     { editor: 'other', mode: 'paint', status: 'passed', paintMetrics: { available: false, reason: 'No layers' } },
   ] })
   assert(html.includes('Paint command breakdown'))
-  assert(html.includes('drawTextBlob</code></td><td>2.50</td><td>0</td><td>5</td>'))
+  assert(html.includes('drawTextBlob</code></td><td>2.67 (1–5)</td><td>0.0045</td><td>0.0030</td>'))
   assert(html.includes('draw&lt;Rect&gt;'))
+  assert(html.includes('0.0015'))
+  assert(html.includes('3 available observations'))
+  assert(html.includes('2 with timings'))
+  assert(html.includes('Average total (ms/load)'))
   assert(!html.includes('99'))
   assert(html.includes('Unavailable: no valid final content-layer snapshots'))
   assert(!html.includes('<script>LVCE</script>'))

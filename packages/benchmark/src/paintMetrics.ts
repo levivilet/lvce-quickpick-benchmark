@@ -1,12 +1,14 @@
 import type { Page } from 'playwright'
 
 interface ContentLayer { layerId: string; drawsContent: boolean }
-export interface PaintCommandCount { method: string; count: number }
+export interface PaintCommandCount { method: string; count: number; durationMs?: number }
 export interface PaintMetrics {
   available: boolean
   reason?: string
   contentLayerCount?: number
   commands?: PaintCommandCount[]
+  timingsAvailable?: boolean
+  timingReason?: string
 }
 
 interface CDPSessionLike {
@@ -14,6 +16,20 @@ interface CDPSessionLike {
   off(event: string, listener: (payload: any) => void): void
   send(method: string, params?: Record<string, unknown>): Promise<any>
   detach(): Promise<void>
+}
+
+const profileRepeatCount = 3
+
+function averageStepDurations(timings: unknown, stepCount: number): number[] {
+  if (!Array.isArray(timings) || timings.length !== profileRepeatCount) throw new Error('Paint Profiler returned an unexpected number of timing runs')
+  const totals = Array.from({ length: stepCount }, () => 0)
+  for (const run of timings) {
+    if (!Array.isArray(run) || run.length !== stepCount || run.some(duration => typeof duration !== 'number' || !Number.isFinite(duration) || duration < 0)) {
+      throw new Error('Paint Profiler timings did not match the command log')
+    }
+    run.forEach((duration, index) => { totals[index] += duration })
+  }
+  return totals.map(duration => duration / profileRepeatCount * 1000)
 }
 
 export async function collectPaintMetrics(page: Page, timeoutMs = 5000): Promise<PaintMetrics> {
@@ -48,15 +64,26 @@ export async function collectPaintMetrics(page: Page, timeoutMs = 5000): Promise
     if (!contentLayers.length) return { available: false, reason: 'No content layers in final snapshot' }
 
     const counts = new Map<string, number>()
+    const durationMs = new Map<string, number>()
+    let timingReason: string | undefined
     let profiledLayerCount = 0
     for (const layer of contentLayers) {
       try {
         const { snapshotId } = await cdp.send('LayerTree.makeSnapshot', { layerId: layer.layerId })
         snapshots.push(snapshotId)
         const { commandLog } = await cdp.send('LayerTree.snapshotCommandLog', { snapshotId })
-        for (const command of commandLog) {
-          const method = typeof command.method === 'string' && command.method ? command.method : 'unknown'
+        const methods: string[] = commandLog.map((command: { method?: unknown }) => typeof command.method === 'string' && command.method ? command.method : 'unknown')
+        for (const method of methods) {
           counts.set(method, (counts.get(method) ?? 0) + 1)
+        }
+        if (!timingReason) {
+          try {
+            const { timings } = await cdp.send('LayerTree.profileSnapshot', { snapshotId, minRepeatCount: profileRepeatCount })
+            const stepDurations = averageStepDurations(timings, methods.length)
+            methods.forEach((method, index) => durationMs.set(method, (durationMs.get(method) ?? 0) + stepDurations[index]))
+          } catch (error) {
+            timingReason = error instanceof Error ? error.message : String(error)
+          }
         }
         profiledLayerCount++
       } catch (error) {
@@ -69,7 +96,9 @@ export async function collectPaintMetrics(page: Page, timeoutMs = 5000): Promise
     return {
       available: true,
       contentLayerCount: profiledLayerCount,
-      commands: [...counts].map(([method, count]) => ({ method, count })).sort((a, b) => b.count - a.count || a.method.localeCompare(b.method)),
+      timingsAvailable: !timingReason,
+      ...(timingReason ? { timingReason } : {}),
+      commands: [...counts].map(([method, count]) => ({ method, count, ...(!timingReason ? { durationMs: durationMs.get(method) ?? 0 } : {}) })).sort((a, b) => b.count - a.count || a.method.localeCompare(b.method)),
     }
   } catch (error) {
     return { available: false, reason: error instanceof Error ? error.message : String(error) }
