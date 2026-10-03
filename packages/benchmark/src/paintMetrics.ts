@@ -50,7 +50,7 @@ async function profileSnapshot(cdp: CDPSessionLike, snapshotId: string, stepCoun
   }
 }
 
-export async function collectPaintMetrics(page: Page, timeoutMs = 5000, timingTimeoutMs = profileTimeoutMs): Promise<PaintMetrics> {
+async function collectPaintMetricsAttempt(page: Page, timeoutMs: number, timingTimeoutMs: number): Promise<PaintMetrics> {
   let cdp: CDPSessionLike
   try { cdp = await page.context().newCDPSession(page) as unknown as CDPSessionLike }
   catch (error) { return { available: false, reason: error instanceof Error ? error.message : String(error) } }
@@ -173,5 +173,14 @@ export async function collectPaintMetrics(page: Page, timeoutMs = 5000, timingTi
       }
       await cdp.detach().catch(() => {})
     }
+  }
+}
+
+export async function collectPaintMetrics(page: Page, timeoutMs = 5000, timingTimeoutMs = profileTimeoutMs): Promise<PaintMetrics> {
+  for (let attempt = 0; ; attempt++) {
+    const metrics = await collectPaintMetricsAttempt(page, timeoutMs, timingTimeoutMs)
+    // A composited layer can disappear between the tree event and makeSnapshot.
+    // Discard the incomplete sample and obtain a fresh tree/session, at most twice.
+    if (metrics.available || attempt === 2 || !/No layer matching given id found/.test(metrics.reason ?? '')) return metrics
   }
 }

@@ -535,3 +535,45 @@ test('partial paint timings show measured coverage without turning missing timin
   assert(html.includes('drawRect</code></td><td>6.00 (2–10)</td><td>3.0000</td><td>1.5000</td><td>4/12</td>'))
   assert(html.includes('drawPaint</code></td><td>0.50 (0–1)</td><td>Unavailable</td><td>Unavailable</td><td>0/1</td>'))
 })
+
+test('a disappearing layer restarts the whole capture with fresh layers and bounded retries', async () => {
+  for (const alwaysDisappears of [false, true]) {
+    let sessions = 0
+    let detached = 0
+    const released: string[] = []
+    const page = { context: () => ({ newCDPSession: async () => {
+      const session = ++sessions
+      const handlers = new Map<string, (event: any) => void>()
+      return {
+        on: (name: string, handler: (event: any) => void) => handlers.set(name, handler),
+        off: (name: string) => handlers.delete(name),
+        detach: async () => { detached++; assert.equal(handlers.size, 0) },
+        send: async (method: string, params?: any) => {
+          if (method === 'LayerTree.enable') handlers.get('LayerTree.layerTreeDidChange')?.({ layers: [
+            { layerId: `first-${session}`, drawsContent: true, width: 10, height: 10 },
+            { layerId: `second-${session}`, drawsContent: true, width: 10, height: 10 },
+          ] })
+          if (method === 'LayerTree.makeSnapshot') {
+            if (params.layerId.startsWith('second') && (alwaysDisappears || session === 1)) throw new Error('No layer matching given id found')
+            return { snapshotId: params.layerId }
+          }
+          if (method === 'LayerTree.snapshotCommandLog') return { commandLog: [{ method: session === 1 ? 'discardedCommand' : 'drawRect' }] }
+          if (method === 'LayerTree.profileSnapshot') return { timings: [[0.001]] }
+          if (method === 'LayerTree.releaseSnapshot') released.push(params.snapshotId)
+          return {}
+        },
+      }
+    } }) } as any
+    const metrics = await collectPaintMetrics(page)
+    assert.equal(sessions, alwaysDisappears ? 3 : 2)
+    assert.equal(detached, sessions)
+    assert(released.includes('first-1'))
+    if (alwaysDisappears) {
+      assert.equal(metrics.available, false)
+      assert.match(metrics.reason!, /No layer matching/)
+    } else {
+      assert.deepEqual(metrics.commands, [{ method: 'drawRect', count: 2, durationMs: 2, timedCount: 2 }])
+      assert.equal(metrics.timingsAvailable, true)
+    }
+  }
+})
