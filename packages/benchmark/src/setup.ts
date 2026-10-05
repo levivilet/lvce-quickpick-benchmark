@@ -3,12 +3,15 @@ import { execFileSync } from 'node:child_process'
 import { chmod, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { parseArgs } from 'node:util'
 
 try { execFileSync('rg', ['--version'], { stdio: 'pipe' }) } catch { throw new Error('Install ripgrep (rg) before running the desktop benchmark; LVCE uses it for file search') }
 
 await mkdir('.tmp/apps', { recursive: true })
+const { values } = parseArgs({ options: { editor: { type: 'string' } } })
 const editors = JSON.parse(await readFile('config/editors.lock.json', 'utf8'))
-for (const editor of editors) {
+if (values.editor && !editors.some((editor: { id: string }) => editor.id === values.editor)) throw new Error('Unknown editor')
+for (const editor of editors.filter((editor: { id: string }) => !values.editor || editor.id === values.editor)) {
   const archive = `.tmp/apps/${editor.archive}`
   if (!existsSync(archive)) {
     const response = await fetch(editor.url, { signal: AbortSignal.timeout(180000) })

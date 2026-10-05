@@ -25,7 +25,7 @@ npm run report
 
 Use `--editor lvce`, `--editor vscode`, `--editor cursor`, `--editor theia`, or `--editor atom` and `--mode latency`,
 `--mode profile`, `--mode traffic`, `--mode render` or `--mode paint`
-for focused diagnosis. These options overwrite `results/results.json` with that run.
+for focused diagnosis. Setup also accepts `--editor` to download and extract only that editor. These options overwrite `results/results.json` with that run.
 Without them, every repetition measures all five editors and both filenames. Atom supports the
 latency and profile modes; the other editors retain all five measurement modes.
 Raw JSON, Chromium `.cpuprofile` and rendering trace files, screenshots and application
@@ -50,8 +50,10 @@ version-specific SQLite welcome state is seeded before the fixture launch.
 The fixed queries are `quickOpenModel.ts` and `editorOptions.ts`. Each trial performs
 one warmup of the same complete query, closes quickpick, waits for initialized worker
 targets, then measures reopening and typing one character at a time. VS Code's late
-TextMate worker must be ready before measurement. Editor order alternates across
-repetitions. These are **warm quickpick searches**, not cold disk-cache measurements.
+TextMate worker must be ready before measurement. When running all editors locally, editor order alternates across
+repetitions. CI runs one independent job per editor and combines their artifacts into
+one report after all five jobs succeed. The report rejects missing, failed, duplicate,
+or incompatible measurements. These are **warm quickpick searches**, not cold disk-cache measurements.
 The operating-system cache is not flushed. Theia opens the fixture in restricted mode
 and declines its trust prompt, so benchmark searches do not enable workspace code.
 

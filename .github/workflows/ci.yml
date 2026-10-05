@@ -31,10 +31,14 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm test
   benchmark:
-    name: Desktop benchmark (all five editors)
+    name: Desktop benchmark (${{ matrix.editor }})
     needs: check
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        editor: [lvce, vscode, cursor, theia, atom]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -51,16 +55,34 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: .tmp/apps
-          key: editors-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('config/editors.lock.json') }}
-      - run: npm run setup
-      - name: Benchmark all five editors; Atom latency and profile passes
-        run: xvfb-run -a npm run benchmark -- --repeats ${{ github.event_name == 'pull_request' && '1' || '5' }}
-      - run: npm run report
+          key: editors-${{ matrix.editor }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('config/editors.lock.json') }}
+      - run: npm run setup -- --editor ${{ matrix.editor }}
+      - name: Benchmark selected editor
+        run: xvfb-run -a npm run benchmark -- --editor ${{ matrix.editor }} --repeats ${{ github.event_name == 'pull_request' && '1' || '5' }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: quickpick-results
+          name: quickpick-results-${{ matrix.editor }}
           path: results/
+  report:
+    name: Combined benchmark report
+    needs: benchmark
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: quickpick-results-*
+          path: results/editors
+      - run: npm run report -- --editors results/editors
+      - uses: actions/upload-artifact@v4
+        with:
+          name: quickpick-report
+          path: site/
+          if-no-files-found: error
       - uses: actions/upload-pages-artifact@v3
         if: github.ref == 'refs/heads/main'
         with:
@@ -68,7 +90,7 @@ jobs:
   deploy:
     name: Deploy Pages
     if: github.ref == 'refs/heads/main'
-    needs: benchmark
+    needs: report
     runs-on: ubuntu-24.04
     permissions:
       pages: write
