@@ -577,3 +577,28 @@ test('a disappearing layer restarts the whole capture with fresh layers and boun
     }
   }
 })
+
+test('editor job reports combine only complete compatible measurements', async () => {
+  const { combine } = await import('../../report/src/combine.ts')
+  const editors = [{ id: 'lvce', version: '1' }, { id: 'atom', version: '2' }]
+  const reports = editors.map(editor => ({
+    protocol: 'query-highlights-two-frames-v1', created: editor.id,
+    fixture: { commit: 'abc' }, editors, environment: { platform: 'linux', viewport: benchmarkViewport }, repeats: 1, filenames: ['file.ts'],
+    trials: (editor.id === 'atom' ? ['latency', 'profile'] : ['latency', 'profile', 'traffic', 'render', 'paint']).map(mode => ({ editor: editor.id, repeat: 0, mode, filename: 'file.ts', status: 'passed' })),
+  }))
+  const result = combine([...reports].reverse(), editors)
+  assert.equal(result.trials.length, 7)
+  assert.deepEqual(result.trials.map((trial: any) => trial.editor), ['lvce', 'lvce', 'lvce', 'lvce', 'lvce', 'atom', 'atom'])
+  assert.throws(() => combine(reports.slice(0, 1), editors), /Missing editor/)
+  for (const mutation of [
+    (data: any[]) => data[0].trials.pop(),
+    (data: any[]) => data[0].trials.push(data[0].trials[0]),
+    (data: any[]) => { data[0].trials[0].status = 'failed' },
+    (data: any[]) => { data[0].fixture.commit = 'different' },
+    (data: any[]) => { data[0].editors[0].version = 'different' },
+  ]) {
+    const data = structuredClone(reports)
+    mutation(data)
+    assert.throws(() => combine(data, editors))
+  }
+})
