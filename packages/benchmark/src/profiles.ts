@@ -1,4 +1,5 @@
 import { writeFile } from 'node:fs/promises'
+import { settleTargets } from './readiness.ts'
 import { Protocol } from './protocol.ts'
 import { TargetSession } from './target-session.ts'
 import type { launch } from './launch.ts'
@@ -35,6 +36,9 @@ export async function profileWorkload(app: Awaited<ReturnType<typeof launch>>, o
     // Initialize dedicated-worker targets before attaching their profilers.
     const pageSession = await app.page.context().newCDPSession(app.page)
     await pageSession.send('Target.setAutoAttach', { autoAttach: true, waitForDebuggerOnStart: false, flatten: true })
+    // Auto-attachment can expose short-lived startup workers after the caller's readiness check.
+    // Let that target membership settle before acquiring sessions for the measured action.
+    await settleTargets(app.browser, app.editorId)
     const { targetInfo: applicationTarget } = await pageSession.send('Target.getTargetInfo')
     if (!applicationTarget?.targetId || applicationTarget.type !== 'page') throw new Error('Missing application page target')
     const targets = (await root.send('Target.getTargets')).targetInfos.filter(t => ['page', 'worker', 'shared_worker', 'service_worker', 'iframe'].includes(t.type))

@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { chromium } from 'playwright'
 import { arm, collect, adapters } from '../src/adapters.ts'
-import { rendererJavaScriptMs, summarize } from '../src/profiles.ts'
+import { profileWorkload, rendererJavaScriptMs, summarize } from '../src/profiles.ts'
 import { cursorWelcomeValues, prepareCursorProfile, seedCursorWelcomeState } from '../src/cursor-profile.ts'
 import { render, statistics } from '../../report/src/render.ts'
 import { benchmarkViewport, launch, profileCapabilities, setBenchmarkViewport, utilityInstrumentation } from '../src/launch.ts'
@@ -600,5 +600,68 @@ test('editor job reports combine only complete compatible measurements', async (
     const data = structuredClone(reports)
     mutation(data)
     assert.throws(() => combine(data, editors))
+  }
+})
+
+
+test('profiler settles targets exposed by auto-attachment before freezing membership', async () => {
+  const browser = await chromium.launch({ executablePath: process.env.CHROME_BIN })
+  const directory = await mkdtemp(`${tmpdir()}/profile-startup-`)
+  try {
+    const page = await browser.newPage()
+    await page.goto('data:text/html,<title>profiler startup</title>')
+    await page.evaluate(async () => {
+      const worker = new Worker(URL.createObjectURL(new Blob(['postMessage("ready")'], { type: 'text/javascript' })))
+      ;(globalThis as any).stableWorker = worker
+      await new Promise(resolve => { worker.onmessage = resolve })
+    })
+    const context = page.context()
+    const newSession = context.newCDPSession.bind(context)
+    context.newCDPSession = async target => {
+      const session = await newSession(target)
+      const send = session.send.bind(session)
+      session.send = (async (method: any, params: any) => {
+        const result = await send(method, params)
+        if (method === 'Target.setAutoAttach') await page.evaluate(async () => {
+          const worker = new Worker(URL.createObjectURL(new Blob(['postMessage("ready")'], { type: 'text/javascript' })))
+          await new Promise(resolve => { worker.onmessage = resolve })
+          setTimeout(() => worker.terminate(), 150)
+        })
+        return result
+      }) as any
+      return session
+    }
+    const newRoot = browser.newBrowserCDPSession.bind(browser)
+    let delayedStart = false
+    browser.newBrowserCDPSession = async () => {
+      const session = await newRoot()
+      const send = session.send.bind(session)
+      session.send = (async (method: any, params: any) => {
+        // Amplify the real pre-action race without retrying or changing the workload.
+        if (method === 'Target.sendMessageToTarget' && JSON.parse(params.message).method === 'Profiler.start' && !delayedStart) {
+          delayedStart = true
+          await new Promise(resolve => setTimeout(resolve, 250))
+        }
+        return send(method, params)
+      }) as any
+      return session
+    }
+    let actions = 0
+    const main = { send: async (method: string, params?: Record<string, unknown>) => {
+      if (method === 'Runtime.evaluate') return { result: { value: String(params?.expression).includes('__benchmarkProcesses') ? [] : { pid: 123, argv: [] } } }
+      if (method === 'Profiler.stop') return { profile }
+      return {}
+    } }
+    const app = { browser, page, main, editorId: 'atom', inspectorUrls: () => [], profileCapabilities: { requireBackendProcess: false, requireRendererWorker: true } }
+    const result = await profileWorkload(app as any, `${directory}/startup`, async () => {
+      actions++
+      await page.evaluate(() => { const end = performance.now() + 20; while (performance.now() < end) Math.sqrt(performance.now()) })
+    })
+    assert.equal(actions, 1)
+    assert.equal(result.results.filter(entry => entry.side === 'frontend').length, 2, 'application page and surviving worker must both be profiled')
+    assert.equal(result.results.filter(entry => entry.side === 'backend').length, 1)
+  } finally {
+    await browser.close()
+    await rm(directory, { recursive: true, force: true })
   }
 })
