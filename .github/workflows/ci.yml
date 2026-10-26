@@ -58,7 +58,7 @@ jobs:
           key: editors-${{ matrix.editor }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('config/editors.lock.json') }}
       - run: npm run setup -- --editor ${{ matrix.editor }}
       - name: Benchmark selected editor
-        run: xvfb-run -a npm run benchmark -- --editor ${{ matrix.editor }} --repeats ${{ matrix.editor == 'vscode' && '10' || github.event_name == 'pull_request' && '1' || '5' }}
+        run: xvfb-run -a npm run benchmark -- --editor ${{ matrix.editor }} --repeats ${{ github.event_name == 'pull_request' && '1' || '5' }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:

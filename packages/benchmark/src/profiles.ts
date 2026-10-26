@@ -31,7 +31,7 @@ export async function profileWorkload(app: Awaited<ReturnType<typeof launch>>, o
   const root = await app.browser.newBrowserCDPSession()
   const sessions: { session: Session; side: string; identity: any; owned?: Protocol | TargetSession }[] = []
   const lifecycle: unknown[] = []
-  for (const event of ['Target.attachedToTarget', 'Target.detachedFromTarget', 'Target.targetDestroyed', 'Target.targetInfoChanged']) root.on(event as any, data => lifecycle.push({ event, data, time: Date.now() }))
+  for (const event of ['Target.targetCreated', 'Target.attachedToTarget', 'Target.detachedFromTarget', 'Target.targetDestroyed', 'Target.targetInfoChanged']) root.on(event as any, data => lifecycle.push({ event, data, time: Date.now() }))
   root.on('Target.receivedMessageFromTarget', ({ sessionId, message }) => {
     const data = JSON.parse(message)
     if (data.method === 'Inspector.detached') lifecycle.push({ event: 'Inspector.detached', sessionId, params: data.params, time: Date.now() })
