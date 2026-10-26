@@ -1,4 +1,5 @@
 import { writeFile } from 'node:fs/promises'
+import { settleTargets } from './readiness.ts'
 import { Protocol } from './protocol.ts'
 import { TargetSession } from './target-session.ts'
 import type { launch } from './launch.ts'
@@ -30,18 +31,14 @@ interface Session { send(method: string, params?: Record<string, unknown>): Prom
 export async function profileWorkload(app: Awaited<ReturnType<typeof launch>>, output: string, action: () => Promise<unknown>) {
   const root = await app.browser.newBrowserCDPSession()
   const sessions: { session: Session; side: string; identity: any; owned?: Protocol | TargetSession }[] = []
-  const lifecycle: unknown[] = []
-  for (const event of ['Target.targetCreated', 'Target.attachedToTarget', 'Target.detachedFromTarget', 'Target.targetDestroyed', 'Target.targetInfoChanged']) root.on(event as any, data => lifecycle.push({ event, data, time: Date.now() }))
-  root.on('Target.receivedMessageFromTarget', ({ sessionId, message }) => {
-    const data = JSON.parse(message)
-    if (data.method === 'Inspector.detached') lifecycle.push({ event: 'Inspector.detached', sessionId, params: data.params, time: Date.now() })
-  })
   let actionResult: unknown
   try {
-    await root.send('Target.setDiscoverTargets', { discover: true })
     // Initialize dedicated-worker targets before attaching their profilers.
     const pageSession = await app.page.context().newCDPSession(app.page)
     await pageSession.send('Target.setAutoAttach', { autoAttach: true, waitForDebuggerOnStart: false, flatten: true })
+    // Auto-attachment can expose short-lived startup workers after the caller's readiness check.
+    // Let that target membership settle before acquiring sessions for the measured action.
+    await settleTargets(app.browser, app.editorId)
     const { targetInfo: applicationTarget } = await pageSession.send('Target.getTargetInfo')
     if (!applicationTarget?.targetId || applicationTarget.type !== 'page') throw new Error('Missing application page target')
     const targets = (await root.send('Target.getTargets')).targetInfos.filter(t => ['page', 'worker', 'shared_worker', 'service_worker', 'iframe'].includes(t.type))
@@ -49,7 +46,6 @@ export async function profileWorkload(app: Awaited<ReturnType<typeof launch>>, o
     const isolateIds = new Set<string>()
     for (const target of targets) {
       const { sessionId } = await root.send('Target.attachToTarget', { targetId: target.targetId, flatten: false })
-      lifecycle.push({ event: 'benchmark-attach', target, sessionId, time: Date.now() })
       const session = new TargetSession(root, sessionId)
       const { id } = await session.send('Runtime.getIsolateId')
       if (isolateIds.has(id)) { await session.close(); continue }
@@ -77,20 +73,11 @@ export async function profileWorkload(app: Awaited<ReturnType<typeof launch>>, o
     const uncovered = before.filter(x => !attachedPids.has(x.pid))
     if ((app.profileCapabilities.requireBackendProcess && !before.length) || uncovered.length) throw new Error(`Missing live backend inspector coverage: ${JSON.stringify({ before, attachedPids: [...attachedPids], inaccessible, uncovered })}`)
     if (app.profileCapabilities.requireRendererWorker && !sessions.some(x => x.identity.type === 'worker')) throw new Error('Missing frontend worker coverage')
-    for (const entry of sessions) {
-      const send = entry.session.send.bind(entry.session)
-      entry.session = { send: async (method, params) => {
-        lifecycle.push({ event: 'benchmark-command', method, identity: entry.identity, time: Date.now() })
-        try { return await send(method, params) }
-        catch (error) { throw new Error(`Profiler command failed: ${JSON.stringify({ method, identity: entry.identity })}`, { cause: error }) }
-      } }
-    }
     for (const { session } of sessions) { await session.send('Profiler.enable'); await session.send('Profiler.setSamplingInterval', { interval: 1000 }) }
     for (const { session } of sessions) await session.send('Profiler.start')
     actionResult = await action()
     const results = []
     for (const [index, { session, side, identity }] of sessions.entries()) {
-      lifecycle.push({ event: 'benchmark-stop', identity, time: Date.now() })
       const { profile } = await session.send('Profiler.stop')
       const file = `${output}-${side}-${index}.cpuprofile`
       await writeFile(file, JSON.stringify(profile))
@@ -103,7 +90,6 @@ export async function profileWorkload(app: Awaited<ReturnType<typeof launch>>, o
     return { actionResult, results, inaccessible, rendererJavaScriptMs: rendererJavaScriptMs(results, applicationTarget.targetId), frontendMs: results.filter(x => x.side === 'frontend').reduce((sum, x) => sum + x.javascriptMs, 0), backendMs: results.filter(x => x.side === 'backend').reduce((sum, x) => sum + x.javascriptMs, 0) }
   } finally {
     await Promise.allSettled(sessions.map(x => x.owned?.close()))
-    await writeFile(`${output}-lifecycle.json`, JSON.stringify(lifecycle, null, 2))
     await root.detach().catch(() => {})
   }
 }
